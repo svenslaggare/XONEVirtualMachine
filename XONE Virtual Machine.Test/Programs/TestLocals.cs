@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using XONEVirtualMachine;
 using XONEVirtualMachine.Core;
@@ -40,9 +41,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.LoadLocal, 3));
                 instructions.Add(new Instruction(OpCodes.Ret));
 
-                var func = new Function(funcDef, instructions, new List<VMType>());
-                func.OperandStackSize = 1;
-
+                var func = new Function(funcDef, instructions, Enumerable.Repeat(intType, 4).ToList());
                 container.VirtualMachine.LoadFunction(func);
                 Assert.AreEqual(400, container.Execute());
             }

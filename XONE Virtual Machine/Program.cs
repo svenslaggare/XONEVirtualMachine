@@ -26,8 +26,6 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = 2;
-
             container.VirtualMachine.LoadFunction(func);
             return func;
         }
@@ -45,8 +43,6 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = 1;
-
             container.VirtualMachine.LoadFunction(func);
             return func;
         }
@@ -72,8 +68,6 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = numArgs;
-
             return func;
         }
 
@@ -100,8 +94,6 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = numArgs;
-
             return func;
         }
 

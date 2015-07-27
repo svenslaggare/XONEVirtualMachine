@@ -39,10 +39,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             instructions.Add(new Instruction(OpCodes.Call, "add", parameters));
             instructions.Add(new Instruction(OpCodes.Ret));
 
-            var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = numArgs;
-
-            return func;
+            return new Function(def, instructions, new List<VMType>());
         }
 
         /// <summary>
@@ -73,10 +70,7 @@ namespace XONE_Virtual_Machine.Test.Programs
 
             instructions.Add(new Instruction(OpCodes.Ret));
 
-            var func = new Function(def, instructions, new List<VMType>());
-            func.OperandStackSize = numArgs;
-
-            return func;
+            return new Function(def, instructions, new List<VMType>());
         }
 
         /// <summary>
@@ -139,8 +133,6 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(def, instructions, new List<VMType>());
-                func.OperandStackSize = 6;
-
                 container.LoadFunction(func);
                 Assert.AreEqual(1 + 2 + 3 + 4 + 5 + 6, container.Execute());
             }
@@ -190,9 +182,8 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(def, instructions, new List<VMType>());
-                func.OperandStackSize = 6;
-
                 container.LoadFunction(func);
+
                 Assert.AreEqual(1 + 2 + 3 + 4 + 5 + 6, container.Execute());
             }
         }
@@ -219,8 +210,6 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions.Add(new Instruction(OpCodes.Ret));
 
                     var func = new Function(def, instructions, new List<VMType>());
-                    func.OperandStackSize = 2;
-
                     container.VirtualMachine.LoadFunction(func);
                 };
 
@@ -233,8 +222,6 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions.Add(new Instruction(OpCodes.Ret));
 
                     var func = new Function(def, instructions, new List<VMType>());
-                    func.OperandStackSize = 1;
-
                     container.VirtualMachine.LoadFunction(func);
                 };
 

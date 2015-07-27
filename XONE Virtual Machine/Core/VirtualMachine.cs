@@ -28,6 +28,7 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public IJITCompiler Compiler { get; }
 
+        private readonly Verifier verifier = null;
         private readonly IList<Function> loadedFunctions = new List<Function>();
 
         /// <summary>
@@ -37,6 +38,7 @@ namespace XONEVirtualMachine.Core
         public VirtualMachine(Func<VirtualMachine, IJITCompiler> createCompilerFn)
         {
             this.Compiler = createCompilerFn(this);
+            this.verifier = new Verifier(this);
         }
 
         /// <summary>
@@ -73,6 +75,7 @@ namespace XONEVirtualMachine.Core
         {
             foreach (var function in this.loadedFunctions)
             {
+                this.verifier.VerifiyFunction(function);
                 this.Compiler.Compile(function);
             }
 
