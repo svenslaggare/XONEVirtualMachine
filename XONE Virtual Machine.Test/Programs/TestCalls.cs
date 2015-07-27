@@ -196,5 +196,52 @@ namespace XONE_Virtual_Machine.Test.Programs
                 Assert.AreEqual(1 + 2 + 3 + 4 + 5 + 6, container.Execute());
             }
         }
+
+        /// <summary>
+        /// Tests calling function defined before
+        /// </summary>
+        [TestMethod]
+        public void DefinitionOrder()
+        {
+            using (var container = new Win64Container())
+            {
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+                Action testFn = () =>
+                {
+                    var def = new FunctionDefinition("test", new List<VMType>(), intType);
+
+                    var instructions = new List<Instruction>();
+
+                    instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+                    instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+                    instructions.Add(new Instruction(OpCodes.AddInt));
+                    instructions.Add(new Instruction(OpCodes.Ret));
+
+                    var func = new Function(def, instructions, new List<VMType>());
+                    func.OperandStackSize = 2;
+
+                    container.VirtualMachine.LoadFunction(func);
+                };
+
+                Action mainFn = () =>
+                {
+                    var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+                    var instructions = new List<Instruction>();
+                    instructions.Add(new Instruction(OpCodes.Call, "test", new List<VMType>()));
+                    instructions.Add(new Instruction(OpCodes.Ret));
+
+                    var func = new Function(def, instructions, new List<VMType>());
+                    func.OperandStackSize = 1;
+
+                    container.VirtualMachine.LoadFunction(func);
+                };
+
+                mainFn();
+                testFn();
+                Assert.AreEqual(3, container.Execute());
+            }
+        }
     }
 }

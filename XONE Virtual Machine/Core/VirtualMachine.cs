@@ -28,13 +28,15 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public IJITCompiler Compiler { get; }
 
+        private readonly IList<Function> loadedFunctions = new List<Function>();
+
         /// <summary>
         /// Creates a new virtual machine
         /// </summary>
-        /// <param name="createCompiler">A function to create the compiler</param>
-        public VirtualMachine(Func<VirtualMachine, IJITCompiler> createCompiler)
+        /// <param name="createCompilerFn">A function to create the compiler</param>
+        public VirtualMachine(Func<VirtualMachine, IJITCompiler> createCompilerFn)
         {
-            this.Compiler = createCompiler(this);
+            this.Compiler = createCompilerFn(this);
         }
 
         /// <summary>
@@ -60,7 +62,7 @@ namespace XONEVirtualMachine.Core
         /// <param name="function">The function to load</param>
         public void LoadFunction(Function function)
         {
-            this.Compiler.Compile(function);
+            this.loadedFunctions.Add(function);
             this.Binder.Define(function.Definition);
         }
 
@@ -69,6 +71,11 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public void Compile()
         {
+            foreach (var function in this.loadedFunctions)
+            {
+                this.Compiler.Compile(function);
+            }
+
             this.Compiler.MakeExecutable();
         }
 
