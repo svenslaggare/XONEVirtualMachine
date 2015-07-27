@@ -1,0 +1,307 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using XONEVirtualMachine.Core;
+
+namespace XONEVirtualMachine.Compiler.Win64
+{
+	/// <summary>
+	/// Represents a code generator
+	/// </summary>
+	public class CodeGenerator
+	{
+        private readonly VirtualMachine virtualMachine;
+        private CallingConvetions callingConvetions = new CallingConvetions();
+
+        /// <summary>
+        /// Creates a new code generator
+        /// </summary>
+        /// <param name="virtualMachine">The virtual machine</param>
+        public CodeGenerator(VirtualMachine virtualMachine)
+        {
+            this.virtualMachine = virtualMachine;
+        }
+
+        /// <summary>
+        /// Generates a call to the given function
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="toCall">The address of the function to call</param>
+        /// <param name="callRegister">The register where the address will be stored in</param>
+        private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Registers callRegister = Registers.AX)
+        {
+            Assembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
+            Assembler.CallInRegister(generatedCode, callRegister);
+        }
+
+        /// <summary>
+        /// Compiles the given function
+        /// </summary>
+        /// <param name="function">The compilationData</param>
+        public void CompileFunction(CompilationData compilationData)
+		{
+            var function = compilationData.Function;
+            this.CreateProlog(compilationData);
+
+            for (int i = 0; i < function.Instructions.Count; i++)
+			{
+				this.GenerateInstruction(compilationData, function.Instructions[i]);
+			}
+        }
+
+        /// <summary>
+        /// Creates the function prolog
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void CreateProlog(CompilationData compilationData)
+        {
+            var function = compilationData.Function;
+
+            //Calculate the size of the stack aligned to 16 bytes
+            var def = function.Definition;
+            int neededStackSize = 
+                (def.Parameters.Count + function.Locals.Count + compilationData.Function.OperandStackSize)
+                * Assembler.RegisterSize;
+
+            int stackSize = ((neededStackSize + 15) / 16) * 16;
+
+            //Save the base pointer
+            Assembler.PushRegister(function.GeneratedCode, Registers.BP); //push rbp
+            Assembler.MoveRegisterToRegister(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
+
+            //Make room for the variables on the stack
+            Assembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
+
+            //Move the arguments to the stack
+            this.callingConvetions.MoveArgumentsToStack(compilationData);
+            this.ZeroLocals(compilationData);
+        }
+
+        /// <summary>
+        /// Zeroes the locals
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void ZeroLocals(CompilationData compilationData)
+        {
+            var func = compilationData.Function;
+            if (func.Locals.Count > 0)
+            {
+                //Zero rax
+                Assembler.XorRegisterToRegister(
+                    func.GeneratedCode,
+                    Registers.AX,
+                    Registers.AX); //xor rax, rax
+
+                for (int i = 0; i < func.Locals.Count; i++)
+                {
+                    int localOffset = (i + func .Definition.Parameters.Count + 1) * -Assembler.RegisterSize;
+                    Assembler.MoveRegisterToMemoryRegisterWithOffset(
+                        func.GeneratedCode,
+                        Registers.BP,
+                        localOffset,
+                        Registers.AX); //mov [rbp-local], rax
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates the function epilog
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void CreateEpilog(CompilationData compilationData)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+
+            //Restore the base pointer
+            Assembler.MoveRegisterToRegister(generatedCode, Registers.SP, Registers.BP); //mov rsp, rbp
+            Assembler.PopRegister(generatedCode, Registers.BP); //pop rbp
+        }
+
+        /// <summary>
+        /// Generates native code for the given instruction
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        /// <param name="instruction">The current instruction</param>
+        private void GenerateInstruction(CompilationData compilationData, Instruction instruction)
+		{
+			var generatedCode = compilationData.Function.GeneratedCode;
+            var operandStack = compilationData.OperandStack;
+            var funcDef = compilationData.Function.Definition;
+            int stackOffset = 1;
+
+            switch (instruction.OpCode)
+			{
+                case OpCodes.Pop:
+                    operandStack.PopRegister(Registers.AX);
+                    break;
+                case OpCodes.LoadInt:
+                    operandStack.PushInt(instruction.IntValue);
+                    break;
+                case OpCodes.LoadFloat:
+                    int floatPattern = BitConverter.ToInt32(BitConverter.GetBytes(instruction.FloatValue), 0);
+                    operandStack.PushInt(floatPattern);
+                    break;
+                case OpCodes.AddInt:
+                case OpCodes.SubInt:
+                case OpCodes.MulInt:
+                case OpCodes.DivInt:
+                    operandStack.PopRegister(Registers.CX);
+                    operandStack.PopRegister(Registers.AX);
+
+                    switch (instruction.OpCode)
+                    {
+                        case OpCodes.AddInt:
+                            Assembler.AddRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            break;
+                        case OpCodes.SubInt:
+                            Assembler.SubRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            break;
+                        case OpCodes.MulInt:
+                            Assembler.MultRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            break;
+                        case OpCodes.DivInt:
+                            //This sign extends the eax register
+                            generatedCode.Add(0x99); //cdq
+                            Assembler.DivRegisterFromRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            break;
+                    }
+
+                    operandStack.PushRegister(Registers.AX);
+                    break;
+                case OpCodes.AddFloat:
+                case OpCodes.SubFloat:
+                case OpCodes.MulFloat:
+                case OpCodes.DivFloat:
+                    operandStack.PopRegister(FloatRegisters.XMM1);
+                    operandStack.PopRegister(FloatRegisters.XMM0);
+
+                    switch (instruction.OpCode)
+                    {
+                        case OpCodes.AddFloat:
+                            Assembler.AddRegisterToRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            break;
+                        case OpCodes.SubFloat:
+                            Assembler.SubRegisterFromRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            break;
+                        case OpCodes.MulFloat:
+                            Assembler.MultRegisterToRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            break;
+                        case OpCodes.DivFloat:
+                            Assembler.DivRegisterFromRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            break;
+                    }
+
+                    operandStack.PushRegister(FloatRegisters.XMM0);
+                    break;
+                case OpCodes.Call:
+                    {
+                        var signature = this.virtualMachine.Binder.FunctionSignature(
+                            instruction.StringValue,
+                            instruction.Parameters);
+
+                        var funcToCall = this.virtualMachine.Binder.GetFunction(signature);
+                   
+                        //Set the function arguments
+                        this.callingConvetions.CallFunctionArguments(compilationData, funcToCall);
+
+                        //Align the stack
+                        int stackAlignment = this.callingConvetions.CalculateStackAlignment(
+                            compilationData,
+                            funcToCall.Parameters);
+
+                        Assembler.SubConstantFromRegister(
+                            generatedCode,
+                            Registers.SP,
+                            stackAlignment);
+
+                        //Generate the call
+                        if (funcToCall.IsManaged)
+                        {
+                            //Mark that the function call needs to be patched with the entry point later
+                            compilationData.UnresolvedFunctionCalls.Add(new UnresolvedFunctionCall(
+                                FunctionCallAddressModes.Relative,
+                                funcToCall,
+                                generatedCode.Count));
+
+                            Assembler.Call(generatedCode, 0);
+                        }
+                        else
+                        {
+                            this.GenerateCall(generatedCode, funcToCall.EntryPoint);
+                        }
+
+                        //Unalign the stack
+                        Assembler.AddConstantToRegister(
+                            generatedCode,
+                            Registers.SP,
+                            stackAlignment);
+
+                        //Hande the return value
+                        this.callingConvetions.HandleReturnValue(compilationData, funcToCall);
+                    }
+                    break;
+                case OpCodes.Ret:
+                    //Handle the return value
+                    this.callingConvetions.MakeReturnValue(compilationData);
+
+                    //Restore the base pointer
+                    this.CreateEpilog(compilationData);
+
+                    //Make the return
+                    Assembler.Return(generatedCode);
+                    break;
+                case OpCodes.LoadArgument:
+                    {
+                        //Load rax with the argument
+                        int argOffset = (instruction.IntValue + stackOffset) * -Assembler.RegisterSize;
+
+                        Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                            generatedCode,
+                            Registers.AX,
+                            Registers.BP,
+                            argOffset); //mov rax, [rbp+<arg offset>]
+
+                        //Push the loaded value
+                        operandStack.PushRegister(Registers.AX);
+                    }
+                    break;
+                case OpCodes.LoadLocal:
+                case OpCodes.StoreLocal:
+                    {
+                        //Load rax with the locals offset
+                        int localOffset =
+                            (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
+                            * -Assembler.RegisterSize;
+
+                        if (instruction.OpCode == OpCodes.LoadLocal)
+                        {
+                            //Load rax with the local
+                            Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                                generatedCode,
+                                Registers.AX,
+                                Registers.BP,
+                                localOffset); //mov rax, [rbp+<offset>]
+
+                            //Push the loaded value
+                            operandStack.PushRegister(Registers.AX);
+                        }
+                        else
+                        {
+                            //Pop the top operand
+                            operandStack.PopRegister(Registers.AX);
+
+                            //Store the operand at the given local
+                            Assembler.MoveRegisterToMemoryRegisterWithOffset(
+                                generatedCode,
+                                Registers.BP,
+                                localOffset,
+                                Registers.AX); //mov [rbp+<local offset>], rax
+                        }
+                    }
+                    break;
+            }
+		}
+	}
+}
