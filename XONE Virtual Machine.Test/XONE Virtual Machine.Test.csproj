@@ -56,6 +56,7 @@
     <Compile Include="Programs\TestCalls.cs" />
     <Compile Include="Programs\TestLocals.cs" />
     <Compile Include="Programs\TestFloat.cs" />
+    <Compile Include="Programs\TestInt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
