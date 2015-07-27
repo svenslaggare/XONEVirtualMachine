@@ -10,7 +10,7 @@ namespace XONEVirtualMachine.Compiler.Win64
     /// <summary>
     /// Represents an operand stack
     /// </summary>
-    public class OperandStack
+    public class OperandStack : IOperandStack
     {
         private readonly Function function;
         private int operandTopIndex;

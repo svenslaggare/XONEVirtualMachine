@@ -65,17 +65,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compiler\IOperandStack.cs" />
     <Compile Include="Core\Binder.cs" />
     <Compile Include="Compiler\IJITCompiler.cs" />
     <Compile Include="Compiler\Win64\CallingConvetions.cs" />
-    <Compile Include="Compiler\Win64\CompilationData.cs" />
+    <Compile Include="Compiler\CompilationData.cs" />
     <Compile Include="Compiler\Win64\Assembler.cs" />
     <Compile Include="Compiler\Win64\CodeGenerator.cs" />
     <Compile Include="Compiler\CodePage.cs" />
     <Compile Include="Compiler\Win64\JITCompiler.cs" />
     <Compile Include="Compiler\MemoryManager.cs" />
     <Compile Include="Compiler\Win64\OperandStack.cs" />
-    <Compile Include="Compiler\Win64\UnresolvedFunctionCall.cs" />
+    <Compile Include="Compiler\UnresolvedFunctionCall.cs" />
     <Compile Include="Core\Function.cs" />
     <Compile Include="Core\FunctionDefinition.cs" />
     <Compile Include="Core\Instruction.cs" />

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using XONEVirtualMachine.Core;
 
-namespace XONEVirtualMachine.Compiler.Win64
+namespace XONEVirtualMachine.Compiler
 {
     /// <summary>
     /// Holds compilation data
@@ -20,7 +20,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The operand stack
         /// </summary>
-        public OperandStack OperandStack { get; }
+        public IOperandStack OperandStack { get; }
 
         /// <summary>
         /// The unresolved function calls
@@ -31,10 +31,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Creates new compilation data
         /// </summary>
         /// <param name="function">The function</param>
-        public CompilationData(Function function)
+        /// <param name="operandStack">The operand stack</param>
+        public CompilationData(Function function, IOperandStack operandStack)
         {
             this.Function = function;
-            this.OperandStack = new OperandStack(function);
+            this.OperandStack = operandStack;
         }
     }
 }

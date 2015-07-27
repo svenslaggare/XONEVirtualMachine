@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using XONEVirtualMachine.Core;
 
-namespace XONEVirtualMachine.Compiler.Win64
+namespace XONEVirtualMachine.Compiler
 {
     /// <summary>
-    /// The function call address mode
+    /// The function call address modes
     /// </summary>
     public enum FunctionCallAddressModes
     {

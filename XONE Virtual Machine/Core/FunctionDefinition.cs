@@ -79,7 +79,7 @@ namespace XONEVirtualMachine.Core
                 name,
                 parameters,
                 returnType,
-                Marshal.GetFunctionPointerForDelegate((TDelegate)funcDelegate));
+                Marshal.GetFunctionPointerForDelegate(funcDelegate));
         }
 
         /// <summary>

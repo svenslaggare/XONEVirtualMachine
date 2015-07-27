@@ -22,6 +22,7 @@ namespace XONEVirtualMachine.Compiler
         /// <param name="minSize">The minimum size required by the page</param>
         private CodePage CreatePage(int minSize)
         {
+            //Align the size of the page to page sizes.
             int size = (minSize + (this.pageSize - 1) / this.pageSize) * this.pageSize;
 
             //Allocate writable & readable memory

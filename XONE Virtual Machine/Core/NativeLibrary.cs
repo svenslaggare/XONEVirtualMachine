@@ -25,13 +25,6 @@ namespace XONEVirtualMachine.Core
             Console.WriteLine(value);
         }
 
-        delegate int FuncIntArgIntIntIntInt(int x1, int x2, int x3, int x4);
-            
-        private static int AddInt(int x1, int x2, int x3, int x4)
-        {
-            return x1 + x2 + x3 + x4;
-        }
-
         /// <summary>
         /// Adds the native library to the given VM
         /// </summary>
@@ -46,12 +39,6 @@ namespace XONEVirtualMachine.Core
               new List<VMType>() { intType },
               voidType,
               Println));
-
-            virtualMachine.Binder.Define(FunctionDefinition.NewExternal<FuncIntArgIntIntIntInt>(
-              "std.add",
-              Enumerable.Repeat(intType, 4).ToList(),
-              intType,
-              AddInt));
         }
     }
 }

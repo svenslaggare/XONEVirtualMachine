@@ -36,13 +36,12 @@ namespace XONEVirtualMachine.Compiler.Win64
 		public IntPtr Compile(Function function)
 		{
             //Compile the function
-            var compilationData = new CompilationData(function);
+            var compilationData = new CompilationData(function, new OperandStack(function));
             this.compiledFunctions.Add(compilationData);
 			this.codeGen.CompileFunction(compilationData);
     
-            //Allocate native memory and copy the generated code
+            //Allocate native memory. The instructions will be copied later when all symbols has been resolved.
             var memory = this.memoryManager.Allocate(function.GeneratedCode.Count);
-			NativeHelpers.CopyTo(memory, function.GeneratedCode);
             function.Definition.SetEntryPoint(memory);
 
             return memory;
@@ -54,9 +53,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="compilationData">The compilation data</param>
         private void ResolveCallTargets(CompilationData compilationData)
         {
-            //Get a pointer to the functions native instructions
-            var funcCodePtr = compilationData.Function.Definition.EntryPoint;
             var generatedCode = compilationData.Function.GeneratedCode;
+            long entryPoint = compilationData.Function.Definition.EntryPoint.ToInt64();
 
             foreach (var unresolvedCall in compilationData.UnresolvedFunctionCalls)
             {
@@ -66,17 +64,13 @@ namespace XONEVirtualMachine.Compiler.Win64
                 if (unresolvedCall.AddressMode == FunctionCallAddressModes.Absolute)
                 {
                     NativeHelpers.SetLong(generatedCode, unresolvedCall.CallSiteOffset + 2, toCallAddress);
-                    NativeHelpers.SetLong(funcCodePtr, unresolvedCall.CallSiteOffset + 2, toCallAddress);
                 }
                 else
                 {
-                    int target = (int)(toCallAddress - (funcCodePtr.ToInt64() + unresolvedCall.CallSiteOffset + 5));
+                    int target = (int)(toCallAddress - (entryPoint + unresolvedCall.CallSiteOffset + 5));
                     NativeHelpers.SetInt(generatedCode, unresolvedCall.CallSiteOffset + 1, target);
-                    NativeHelpers.SetInt(funcCodePtr, unresolvedCall.CallSiteOffset + 1, target);
                 }
-            }
-
-            var code = string.Join(", ", generatedCode);
+            }            
 
             compilationData.UnresolvedFunctionCalls.Clear();
         }
@@ -89,6 +83,9 @@ namespace XONEVirtualMachine.Compiler.Win64
             foreach (var function in this.compiledFunctions)
             {
                 this.ResolveCallTargets(function);
+                NativeHelpers.CopyTo(
+                    function.Function.Definition.EntryPoint,
+                    function.Function.GeneratedCode);
             }
         }
 

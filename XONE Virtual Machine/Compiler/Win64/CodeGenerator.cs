@@ -13,7 +13,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 	public class CodeGenerator
 	{
         private readonly VirtualMachine virtualMachine;
-        private CallingConvetions callingConvetions = new CallingConvetions();
+        private readonly CallingConvetions callingConvetions = new CallingConvetions();
 
         /// <summary>
         /// Creates a new code generator
