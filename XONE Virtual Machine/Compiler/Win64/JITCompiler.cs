@@ -8,38 +8,38 @@ using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
 {
-	/// <summary>
-	/// Represents a JIT compiler
-	/// </summary>
-	public class JITCompiler : IJITCompiler
-	{
+    /// <summary>
+    /// Represents a JIT compiler
+    /// </summary>
+    public class JITCompiler : IJITCompiler
+    {
         private readonly VirtualMachine virtualMachine;
         private readonly CodeGenerator codeGen;
         private readonly MemoryManager memoryManager = new MemoryManager();
         private readonly IList<CompilationData> compiledFunctions = new List<CompilationData>();
 
-		/// <summary>
-		/// Creates a new compiler
-		/// </summary>
+        /// <summary>
+        /// Creates a new compiler
+        /// </summary>
         /// <param name="virtualMachine">The virtual machine</param>
-		public JITCompiler(VirtualMachine virtualMachine)
-		{
+        public JITCompiler(VirtualMachine virtualMachine)
+        {
             this.virtualMachine = virtualMachine;
             this.codeGen = new CodeGenerator(virtualMachine);
         }
 
-		/// <summary>
-		/// Compiles the given function
-		/// </summary>
-		/// <param name="function">The function to compile</param>
-		/// <returns>A pointer to the start of the compiled function</returns>
-		public IntPtr Compile(Function function)
-		{
+        /// <summary>
+        /// Compiles the given function
+        /// </summary>
+        /// <param name="function">The function to compile</param>
+        /// <returns>A pointer to the start of the compiled function</returns>
+        public IntPtr Compile(Function function)
+        {
             //Compile the function
             var compilationData = new CompilationData(function, new OperandStack(function));
             this.compiledFunctions.Add(compilationData);
-			this.codeGen.CompileFunction(compilationData);
-    
+            this.codeGen.CompileFunction(compilationData);
+
             //Allocate native memory. The instructions will be copied later when all symbols has been resolved.
             var memory = this.memoryManager.Allocate(function.GeneratedCode.Count);
             function.Definition.SetEntryPoint(memory);
@@ -95,7 +95,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     int target = (int)(toCallAddress - (entryPoint + unresolvedCall.CallSiteOffset + 5));
                     NativeHelpers.SetInt(generatedCode, unresolvedCall.CallSiteOffset + 1, target);
                 }
-            }            
+            }
 
             compilationData.UnresolvedFunctionCalls.Clear();
         }
@@ -124,12 +124,12 @@ namespace XONEVirtualMachine.Compiler.Win64
             this.memoryManager.MakeExecutable();
         }
 
-		/// <summary>
-		/// Disposes resources
-		/// </summary>
-		public void Dispose()
-		{
+        /// <summary>
+        /// Disposes resources
+        /// </summary>
+        public void Dispose()
+        {
             this.memoryManager.Dispose();
-		}
-	}
+        }
+    }
 }

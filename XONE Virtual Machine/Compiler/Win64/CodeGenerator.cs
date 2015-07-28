@@ -7,11 +7,11 @@ using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
 {
-	/// <summary>
-	/// Represents a code generator
-	/// </summary>
-	public class CodeGenerator
-	{
+    /// <summary>
+    /// Represents a code generator
+    /// </summary>
+    public class CodeGenerator
+    {
         private readonly VirtualMachine virtualMachine;
         private readonly CallingConvetions callingConvetions = new CallingConvetions();
 
@@ -41,14 +41,14 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="function">The compilationData</param>
         public void CompileFunction(CompilationData compilationData)
-		{
+        {
             var function = compilationData.Function;
             this.CreateProlog(compilationData);
 
             for (int i = 0; i < function.Instructions.Count; i++)
-			{
-				this.GenerateInstruction(compilationData, function.Instructions[i], i);
-			}
+            {
+                this.GenerateInstruction(compilationData, function.Instructions[i], i);
+            }
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             //Calculate the size of the stack aligned to 16 bytes
             var def = function.Definition;
-            int neededStackSize = 
+            int neededStackSize =
                 (def.Parameters.Count + function.Locals.Count + compilationData.Function.OperandStackSize)
                 * Assembler.RegisterSize;
 
@@ -96,7 +96,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 for (int i = 0; i < func.Locals.Count; i++)
                 {
-                    int localOffset = (i + func .Definition.Parameters.Count + 1) * -Assembler.RegisterSize;
+                    int localOffset = (i + func.Definition.Parameters.Count + 1) * -Assembler.RegisterSize;
                     Assembler.MoveRegisterToMemoryRegisterWithOffset(
                         func.GeneratedCode,
                         Registers.BP,
@@ -126,8 +126,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="instruction">The current instruction</param>
         /// <param name="index">The index of the instruction</param>
         private void GenerateInstruction(CompilationData compilationData, Instruction instruction, int index)
-		{
-			var generatedCode = compilationData.Function.GeneratedCode;
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
             var operandStack = compilationData.OperandStack;
             var funcDef = compilationData.Function.Definition;
             int stackOffset = 1;
@@ -135,7 +135,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             compilationData.InstructionMapping.Add(generatedCode.Count);
 
             switch (instruction.OpCode)
-			{
+            {
                 case OpCodes.Pop:
                     operandStack.PopRegister(Registers.AX);
                     break;
@@ -205,7 +205,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             instruction.Parameters);
 
                         var funcToCall = this.virtualMachine.Binder.GetFunction(signature);
-                   
+
                         //Set the function arguments
                         this.callingConvetions.CallFunctionArguments(compilationData, funcToCall);
 
@@ -397,6 +397,6 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     break;
             }
-		}
-	}
+        }
+    }
 }
