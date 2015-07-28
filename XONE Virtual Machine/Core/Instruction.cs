@@ -27,7 +27,14 @@ namespace XONEVirtualMachine.Core
         Ret,
         LoadArgument,
         LoadLocal,
-        StoreLocal
+        StoreLocal,
+        Branch,
+        BranchEqual,
+        BranchNotEqual,
+        BranchGreaterThan,
+        BranchGreaterOrEqual,
+        BranchLessThan,
+        BranchLessOrEqual
 	}
 
 	/// <summary>

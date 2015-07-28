@@ -37,18 +37,26 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public IList<byte> GeneratedCode { get; } = new List<byte>();
 
-		/// <summary>
-		/// Creates a new function
-		/// </summary>
+        /// <summary>
+        /// The operand types for instructions
+        /// </summary>
+        public IReadOnlyList<IList<VMType>> OperandTypes { get; }
+
+        /// <summary>
+        /// Creates a new function
+        /// </summary>
         /// <param name="definition">The function definition</param>
         /// <param name="instructions">The instructions</param>
         /// <param name="locals">The type of the locals</param>
-		public Function(FunctionDefinition definition, IList<Instruction> instructions, IList<VMType> locals)
+        public Function(FunctionDefinition definition, IList<Instruction> instructions, IList<VMType> locals)
 		{
             this.Definition = definition;
             this.Instructions = new ReadOnlyCollection<Instruction>(instructions);
             this.Locals = new ReadOnlyCollection<VMType>(locals);
-		}
+
+            this.OperandTypes = new ReadOnlyCollection<IList<VMType>>(
+                instructions.Select<Instruction, IList<VMType>>(x => new List<VMType>()).ToList());
+        }
 
         public override string ToString()
         {

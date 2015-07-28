@@ -59,6 +59,7 @@
     <Compile Include="Programs\TestInt.cs" />
     <Compile Include="Programs\TestInvalid.cs" />
     <Compile Include="Programs\TestFunctions.cs" />
+    <Compile Include="Programs\TestBranches.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

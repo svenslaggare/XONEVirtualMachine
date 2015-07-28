@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,6 +67,40 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
+        /// Represents a branch check
+        /// </summary>
+        private class BranchCheck
+        {
+            /// <summary>
+            /// The source instruction
+            /// </summary>
+            public int Source { get; }
+
+            /// <summary>
+            /// The target instruction
+            /// </summary>
+            public int Target { get; }
+
+            /// <summary>
+            /// The types before the branch
+            /// </summary>
+            public IReadOnlyList<VMType> BranchTypes { get; }
+
+            /// <summary>
+            /// Creates a new branch check
+            /// </summary>
+            /// <param name="source">The source</param>
+            /// <param name="target">The target</param>
+            /// <param name="branchTypes">The branch types</param>
+            public BranchCheck(int source, int target, IList<VMType> branchTypes)
+            {
+                this.Source = source;
+                this.Target = target;
+                this.BranchTypes = new ReadOnlyCollection<VMType>(branchTypes);
+            }
+        }
+
+        /// <summary>
         /// Asserts that the given amount of operand exists on the stack.
         /// </summary>
         private void AssertOperandCount(Function function, Instruction instruction, int index, Stack<VMType> operandStack, int count)
@@ -111,14 +146,55 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
+        /// Verifies the given branches
+        /// </summary>
+        /// <param name="function">The function being verified</param>
+        /// <param name="branches">The branches</param>
+        private void VerifiyBranches(Function function, IList<BranchCheck> branches)
+        {
+            foreach (var branch in branches)
+            {
+                var postSourceTypes = branch.BranchTypes;
+                var preTargetTypes = function.OperandTypes[branch.Target];
+
+                if (postSourceTypes.Count == preTargetTypes.Count)
+                {
+                    for (int i = postSourceTypes.Count - 1; i >= 0; i--)
+                    {
+                        var postType = postSourceTypes[i];
+                        var preType = preTargetTypes[i];
+
+                        this.AssertSameType(
+                            function,
+                            function.Instructions[branch.Source],
+                            branch.Source,
+                            preType,
+                            postType);
+                    }
+                }
+                else
+                {
+                    throw new VerificationException(
+                        "Expected the number of types before and after branch to be the same.",
+                        function,
+                        function.Instructions[branch.Source],
+                        branch.Source);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies the given instruction
         /// </summary>
         /// <param name="function">The function being verified</param>
         /// <param name="instruction">The instruction</param>
         /// <param name="index">The index of the instruction</param>
         /// <param name="operandStack">The operand stack</param>
-        private void VerifiyInstruction(Function function, Instruction instruction, int index, Stack<VMType> operandStack)
+        /// <param name="branches">The branches</param>
+        private void VerifiyInstruction(Function function, Instruction instruction, int index, Stack<VMType> operandStack, IList<BranchCheck> branches)
         {
+            function.OperandTypes[index].AddRange(operandStack.ToList());
+
             switch (instruction.OpCode)
             {
                 case OpCodes.Pop:
@@ -263,6 +339,81 @@ namespace XONEVirtualMachine.Core
                             function, instruction, index);
                     }
                     break;
+                case OpCodes.Branch:
+                    //Check if valid target
+                    if (!(instruction.IntValue >= 0 && instruction.IntValue <= function.Instructions.Count))
+                    {
+                        throw new VerificationException(
+                            $"Invalid jump target ({instruction.IntValue}).",
+                            function,
+                            instruction,
+                            index);
+                    }
+
+                    branches.Add(new BranchCheck(index, instruction.IntValue, operandStack.ToList()));
+                    break;
+                case OpCodes.BranchEqual:
+                case OpCodes.BranchNotEqual:
+                case OpCodes.BranchGreaterThan:
+                case OpCodes.BranchGreaterOrEqual:
+                case OpCodes.BranchLessThan:
+                case OpCodes.BranchLessOrEqual:
+                    {
+                        this.AssertOperandCount(function, instruction, index, operandStack, 2);
+
+                        //Check if valid target
+                        if (!(instruction.IntValue >= 0 && instruction.IntValue <= function.Instructions.Count))
+                        {
+                            throw new VerificationException(
+                                $"Invalid jump target ({instruction.IntValue}).",
+                                function,
+                                instruction,
+                                index);
+                        }
+
+                        var op1 = operandStack.Pop();
+                        var op2 = operandStack.Pop();
+
+                        if (op1 == this.intType)
+                        {
+                            if (op2.IsPrimitiveType(PrimitiveTypes.Int))
+                            {
+                                branches.Add(new BranchCheck(index, instruction.IntValue, operandStack.ToList()));
+                            }
+                            else
+                            {
+                                throw new VerificationException(
+                                    "Expected two operands of type 'Int' on the stack.",
+                                    function,
+                                    instruction,
+                                    index);
+                            }
+                        }
+                        else if (op2 == this.floatType)
+                        {
+                            if (op2.IsPrimitiveType(PrimitiveTypes.Float))
+                            {
+                                branches.Add(new BranchCheck(index, instruction.IntValue, operandStack.ToList()));
+                            }
+                            else
+                            {
+                                throw new VerificationException(
+                                    "Expected two operands of type 'Float' on the stack.",
+                                    function,
+                                    instruction,
+                                    index);
+                            }
+                        }
+                        else
+                        {
+                            throw new VerificationException(
+                                "Expected two operands of comparable type on the stack.",
+                                function,
+                                instruction,
+                                index);
+                        }
+                    }
+                    break;
             }
         }
         
@@ -273,6 +424,7 @@ namespace XONEVirtualMachine.Core
         public void VerifiyFunction(Function function)
         {
             var operandStack = new Stack<VMType>();
+            var branches = new List<BranchCheck>();
 
             if (function.Instructions.Count == 0)
             {
@@ -292,7 +444,7 @@ namespace XONEVirtualMachine.Core
                 //Calculate the maximum size of the operand stack
                 function.OperandStackSize = Math.Max(function.OperandStackSize, operandStack.Count);
 
-                this.VerifiyInstruction(function, instruction, i, operandStack);
+                this.VerifiyInstruction(function, instruction, i, operandStack, branches);
 
                 if (i == function.Instructions.Count - 1)
                 {
@@ -304,6 +456,8 @@ namespace XONEVirtualMachine.Core
                     }
                 }
             }
+
+            this.VerifiyBranches(function, branches);
         }
     }
 }

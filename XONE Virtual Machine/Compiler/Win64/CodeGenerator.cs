@@ -47,7 +47,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             for (int i = 0; i < function.Instructions.Count; i++)
 			{
-				this.GenerateInstruction(compilationData, function.Instructions[i]);
+				this.GenerateInstruction(compilationData, function.Instructions[i], i);
 			}
         }
 
@@ -124,12 +124,15 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="instruction">The current instruction</param>
-        private void GenerateInstruction(CompilationData compilationData, Instruction instruction)
+        /// <param name="index">The index of the instruction</param>
+        private void GenerateInstruction(CompilationData compilationData, Instruction instruction, int index)
 		{
 			var generatedCode = compilationData.Function.GeneratedCode;
             var operandStack = compilationData.OperandStack;
             var funcDef = compilationData.Function.Definition;
             int stackOffset = 1;
+
+            compilationData.InstructionMapping.Add(generatedCode.Count);
 
             switch (instruction.OpCode)
 			{
@@ -299,6 +302,98 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 localOffset,
                                 Registers.AX); //mov [rbp+<local offset>], rax
                         }
+                    }
+                    break;
+                case OpCodes.Branch:
+                    Assembler.Jump(generatedCode, 0); //jmp <target>
+
+                    compilationData.UnresolvedBranches.Add(
+                        generatedCode.Count - 5,
+                        new UnresolvedBranchTarget(instruction.IntValue, 5));
+                    break;
+                case OpCodes.BranchEqual:
+                case OpCodes.BranchNotEqual:
+                case OpCodes.BranchGreaterThan:
+                case OpCodes.BranchGreaterOrEqual:
+                case OpCodes.BranchLessThan:
+                case OpCodes.BranchLessOrEqual:
+                    {
+                        var opType = compilationData.Function.OperandTypes[index].Last();
+                        bool unsignedComparison = false;
+
+                        if (opType.IsPrimitiveType(PrimitiveTypes.Int))
+                        {
+                            //Pop 2 operands
+                            operandStack.PopRegister(Registers.CX);
+                            operandStack.PopRegister(Registers.AX);
+
+                            //Compare
+                            Assembler.CompareRegisterToRegister(generatedCode, Registers.AX, Registers.CX); //cmp rax, rcx
+                        }
+                        else if (opType.IsPrimitiveType(PrimitiveTypes.Float))
+                        {
+                            //Pop 2 operands
+                            operandStack.PopRegister(FloatRegisters.XMM1);
+                            operandStack.PopRegister(FloatRegisters.XMM0);
+
+                            //Compare
+                            generatedCode.AddRange(new byte[] { 0x0f, 0x2e, 0xc1 }); //ucomiss xmm0, xmm1
+                            unsignedComparison = true;
+                        }
+
+                        switch (instruction.OpCode)
+                        {
+                            case OpCodes.BranchEqual:
+                                Assembler.JumpEqual(generatedCode, 0); // je <target>
+                                break;
+                            case OpCodes.BranchNotEqual:
+                                Assembler.JumpNotEqual(generatedCode, 0); // jne <target>
+                                break;
+                            case OpCodes.BranchGreaterThan:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpGreaterThanUnsigned(generatedCode, 0); // jg <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpGreaterThan(generatedCode, 0); // jg <target>
+                                }
+                                break;
+                            case OpCodes.BranchGreaterOrEqual:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpGreaterThanOrEqualUnsigned(generatedCode, 0); // jge <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpGreaterThanOrEqual(generatedCode, 0); // jge <target>
+                                }
+                                break;
+                            case OpCodes.BranchLessThan:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpLessThanUnsigned(generatedCode, 0); // jl <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpLessThan(generatedCode, 0); // jl <target>
+                                }
+                                break;
+                            case OpCodes.BranchLessOrEqual:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpLessThanOrEqualUnsigned(generatedCode, 0); // jle <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpLessThanOrEqual(generatedCode, 0); // jle <target>
+                                }
+                                break;
+                        }
+
+                        compilationData.UnresolvedBranches.Add(
+                            generatedCode.Count - 6,
+                            new UnresolvedBranchTarget(instruction.IntValue, 6));
                     }
                     break;
             }

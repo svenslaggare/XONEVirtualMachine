@@ -48,6 +48,31 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Resolves the branches for the given function
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void ResolveBranches(CompilationData compilationData)
+        {
+            foreach (var branch in compilationData.UnresolvedBranches)
+            {
+                int source = branch.Key;
+                var branchTarget = branch.Value;
+
+                int nativeTarget = compilationData.InstructionMapping[branchTarget.Target];
+
+                //Calculate the native jump location
+                int target = nativeTarget - source - branchTarget.InstructionSize;
+
+                //Update the source with the native target
+                int sourceOffset = source + branchTarget.InstructionSize - sizeof(int);
+                NativeHelpers.SetInt(compilationData.Function.GeneratedCode, sourceOffset, target);
+
+            }
+
+            compilationData.UnresolvedBranches.Clear();
+        }
+
+        /// <summary>
         /// Resolves the call target for the given function
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
@@ -83,6 +108,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             foreach (var function in this.compiledFunctions)
             {
                 this.ResolveCallTargets(function);
+                this.ResolveBranches(function);
                 NativeHelpers.CopyTo(
                     function.Function.Definition.EntryPoint,
                     function.Function.GeneratedCode);
