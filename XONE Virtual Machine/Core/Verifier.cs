@@ -92,6 +92,25 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
+        /// Verifies the definition for the given function
+        /// </summary>
+        /// <param name="function">The function</param>
+        private void VerifiyDefinition(Function function)
+        {
+            foreach (var parameter in function.Definition.Parameters)
+            {
+                if (parameter == this.voidType)
+                {
+                    throw new VerificationException(
+                        "'Void' is not a valid parameter type.",
+                        function,
+                        new Instruction(),
+                        0);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verifies the given instruction
         /// </summary>
         /// <param name="function">The function being verified</param>
@@ -254,6 +273,17 @@ namespace XONEVirtualMachine.Core
         public void VerifiyFunction(Function function)
         {
             var operandStack = new Stack<VMType>();
+
+            if (function.Instructions.Count == 0)
+            {
+                throw new VerificationException(
+                    "Empty functions are not allowed.",
+                    function,
+                    new Instruction(),
+                    0);
+            }
+
+            this.VerifiyDefinition(function);
 
             for (int i = 0; i < function.Instructions.Count; i++)
             {

@@ -57,6 +57,8 @@
     <Compile Include="Programs\TestLocals.cs" />
     <Compile Include="Programs\TestFloat.cs" />
     <Compile Include="Programs\TestInt.cs" />
+    <Compile Include="Programs\TestInvalid.cs" />
+    <Compile Include="Programs\TestFunctions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

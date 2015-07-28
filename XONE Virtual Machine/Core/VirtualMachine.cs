@@ -65,7 +65,20 @@ namespace XONEVirtualMachine.Core
         public void LoadFunction(Function function)
         {
             this.loadedFunctions.Add(function);
-            this.Binder.Define(function.Definition);
+
+            if (function.Definition.Name == "main")
+            {
+                if (!(function.Definition.Parameters.Count == 0 
+                      && function.Definition.ReturnType.IsPrimitiveType(PrimitiveTypes.Int)))
+                {
+                    throw new Exception("Expected the main function to have the signature: 'main() Int'.");
+                }
+            }
+
+            if (!this.Binder.Define(function.Definition))
+            {
+                throw new Exception($"The function '{function.Definition}' is already defined.");
+            }
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         /// <summary>
         /// Executes a program that has an entry point that returns a float
         /// </summary>
-        private static float ExecuteFloatProgram(Win64Container container, string entryPointName = "main")
+        private static float ExecuteFloatProgram(Win64Container container, string entryPointName = "floatMain")
         {
             container.VirtualMachine.Compile();
             var entryPoint = container.VirtualMachine.Binder.GetFunction(entryPointName + "()");
@@ -38,7 +38,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             using (var container = new Win64Container())
             {
                 var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
-                var funcDef = new FunctionDefinition("main", new List<VMType>(), floatType);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
 
                 var instructions = new List<Instruction>();
 
@@ -62,7 +62,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             using (var container = new Win64Container())
             {
                 var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
-                var funcDef = new FunctionDefinition("main", new List<VMType>(), floatType);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
 
                 var instructions = new List<Instruction>();
 
@@ -86,7 +86,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             using (var container = new Win64Container())
             {
                 var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
-                var funcDef = new FunctionDefinition("main", new List<VMType>(), floatType);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
 
                 var instructions = new List<Instruction>();
 
@@ -110,7 +110,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             using (var container = new Win64Container())
             {
                 var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
-                var funcDef = new FunctionDefinition("main", new List<VMType>(), floatType);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
 
                 var instructions = new List<Instruction>();
 
