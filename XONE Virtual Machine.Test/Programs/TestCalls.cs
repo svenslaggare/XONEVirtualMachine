@@ -83,8 +83,11 @@ namespace XONE_Virtual_Machine.Test.Programs
             {
                 using (var container = new Win64Container())
                 {
-                    container.VirtualMachine.LoadFunction(this.CreateAddFunction(container, i));
-                    container.VirtualMachine.LoadFunction(this.CreateMainFunction(container, i));
+                    var assembly = new Assembly(
+                        this.CreateAddFunction(container, i),
+                        this.CreateMainFunction(container, i));
+
+                    container.VirtualMachine.LoadAssembly(assembly);
                     Assert.AreEqual(i * (1 + i) / 2, container.Execute());
                 }
             }
@@ -133,7 +136,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(def, instructions, new List<VMType>());
-                container.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(1 + 2 + 3 + 4 + 5 + 6, container.Execute());
             }
         }
@@ -182,7 +185,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(def, instructions, new List<VMType>());
-                container.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
 
                 Assert.AreEqual(1 + 2 + 3 + 4 + 5 + 6, container.Execute());
             }
@@ -197,6 +200,7 @@ namespace XONE_Virtual_Machine.Test.Programs
             using (var container = new Win64Container())
             {
                 var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var assemblyFunctions = new List<Function>();
 
                 Action testFn = () =>
                 {
@@ -210,7 +214,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions.Add(new Instruction(OpCodes.Ret));
 
                     var func = new Function(def, instructions, new List<VMType>());
-                    container.VirtualMachine.LoadFunction(func);
+                    assemblyFunctions.Add(func);
                 };
 
                 Action mainFn = () =>
@@ -222,11 +226,12 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions.Add(new Instruction(OpCodes.Ret));
 
                     var func = new Function(def, instructions, new List<VMType>());
-                    container.VirtualMachine.LoadFunction(func);
+                    assemblyFunctions.Add(func);
                 };
 
                 mainFn();
                 testFn();
+                container.LoadAssembly(new Assembly(assemblyFunctions));
                 Assert.AreEqual(3, container.Execute());
             }
         }

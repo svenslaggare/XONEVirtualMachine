@@ -26,7 +26,7 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            container.VirtualMachine.LoadFunction(func);
+            container.VirtualMachine.LoadAssembly(Assembly.SingleFunction(func));
             return func;
         }
 
@@ -43,7 +43,7 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Ret));
 
             var func = new Function(def, instructions, new List<VMType>());
-            container.VirtualMachine.LoadFunction(func);
+            container.VirtualMachine.LoadAssembly(Assembly.SingleFunction(func));
             return func;
         }
 
@@ -67,8 +67,7 @@ namespace XONEVirtualMachine
             instructions.Add(new Instruction(OpCodes.Call, "add", Enumerable.Repeat(intType, numArgs).ToList()));
             instructions.Add(new Instruction(OpCodes.Ret));
 
-            var func = new Function(def, instructions, new List<VMType>());
-            return func;
+            return new Function(def, instructions, new List<VMType>());
         }
 
         /// <summary>
@@ -93,19 +92,22 @@ namespace XONEVirtualMachine
 
             instructions.Add(new Instruction(OpCodes.Ret));
 
-            var func = new Function(def, instructions, new List<VMType>());
-            return func;
+            return new Function(def, instructions, new List<VMType>());
         }
 
         static void Main(string[] args)
         {
             using (var container = new Win64Container())
             {
+                var assembly = new Assembly(new List<Function>()
+                {
+                    CreateAddFunction(container, 4),
+                    CreateMainFunction(container, 4)
+                });
                 //CreateTestFunction(container);
                 //CreateMainFunction(container);
 
-                container.LoadFunction(CreateAddFunction(container, 4));
-                container.LoadFunction(CreateMainFunction(container, 4));
+                container.LoadAssembly(assembly);
                 Console.WriteLine(container.Execute());
             }
 

@@ -42,7 +42,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(funcDef, instructions, Enumerable.Repeat(intType, 4).ToList());
-                container.VirtualMachine.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(400, container.Execute());
             }
         }

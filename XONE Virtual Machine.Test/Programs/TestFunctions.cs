@@ -31,7 +31,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     },
                     new List<VMType>());
 
-                container.LoadFunction(testFunc);
+                container.LoadAssembly(Assembly.SingleFunction(testFunc));
 
                 try
                 {
@@ -66,7 +66,7 @@ namespace XONE_Virtual_Machine.Test.Programs
 
                 try
                 {
-                    container.LoadFunction(mainFunc);
+                    container.LoadAssembly(Assembly.SingleFunction(mainFunc));
                     Assert.Fail("Expected invalid main to not pass.");
                 }
                 catch (Exception e)
@@ -96,7 +96,7 @@ namespace XONE_Virtual_Machine.Test.Programs
 
                 try
                 {
-                    container.LoadFunction(mainFunc);
+                    container.LoadAssembly(Assembly.SingleFunction(mainFunc));
                     Assert.Fail("Expected invalid main to not pass.");
                 }
                 catch (Exception e)
@@ -135,8 +135,8 @@ namespace XONE_Virtual_Machine.Test.Programs
                     },
                     new List<VMType>());
 
-                container.LoadFunction(func1);
-                container.LoadFunction(func2);
+                var assembly = new Assembly(func1, func2);
+                container.LoadAssembly(assembly);
             }
         }
 
@@ -169,11 +169,11 @@ namespace XONE_Virtual_Machine.Test.Programs
                     },
                     new List<VMType>());
 
-                container.LoadFunction(func1);
+                var assembly = new Assembly(func1, func2);
 
                 try
                 {
-                    container.LoadFunction(func2);
+                    container.LoadAssembly(assembly);
                     Assert.Fail("Expected invalid overload to not pass.");
                 }
                 catch (Exception e)
@@ -211,11 +211,11 @@ namespace XONE_Virtual_Machine.Test.Programs
                     },
                     new List<VMType>());
 
-                container.LoadFunction(func1);
+                var assembly = new Assembly(func1, func2);
 
                 try
                 {
-                    container.LoadFunction(func2);
+                    container.LoadAssembly(assembly);
                     Assert.Fail("Expected already defined to not pass.");
                 }
                 catch (Exception e)

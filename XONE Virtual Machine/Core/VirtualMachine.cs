@@ -29,7 +29,7 @@ namespace XONEVirtualMachine.Core
         public IJITCompiler Compiler { get; }
 
         private readonly Verifier verifier = null;
-        private readonly IList<Function> loadedFunctions = new List<Function>();
+        private readonly IList<Assembly> loadedAssemblies = new List<Assembly>();
 
         /// <summary>
         /// Creates a new virtual machine
@@ -59,37 +59,43 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
-        /// Loads the given function
+        /// Loads the given assembly
         /// </summary>
-        /// <param name="function">The function to load</param>
-        public void LoadFunction(Function function)
+        /// <param name="assembly">The assembly</param>
+        public void LoadAssembly(Assembly assembly)
         {
-            this.loadedFunctions.Add(function);
+            this.loadedAssemblies.Add(assembly);
 
-            if (function.Definition.Name == "main")
+            foreach (var function in assembly.Functions)
             {
-                if (!(function.Definition.Parameters.Count == 0 
-                      && function.Definition.ReturnType.IsPrimitiveType(PrimitiveTypes.Int)))
+                if (function.Definition.Name == "main")
                 {
-                    throw new Exception("Expected the main function to have the signature: 'main() Int'.");
+                    if (!(function.Definition.Parameters.Count == 0
+                          && function.Definition.ReturnType.IsPrimitiveType(PrimitiveTypes.Int)))
+                    {
+                        throw new Exception("Expected the main function to have the signature: 'main() Int'.");
+                    }
                 }
-            }
 
-            if (!this.Binder.Define(function.Definition))
-            {
-                throw new Exception($"The function '{function.Definition}' is already defined.");
+                if (!this.Binder.Define(function.Definition))
+                {
+                    throw new Exception($"The function '{function.Definition}' is already defined.");
+                }
             }
         }
 
         /// <summary>
-        /// Compiles loaded functions
+        /// Compiles loaded assemblies
         /// </summary>
         public void Compile()
         {
-            foreach (var function in this.loadedFunctions)
+            foreach (var assembly in this.loadedAssemblies)
             {
-                this.verifier.VerifiyFunction(function);
-                this.Compiler.Compile(function);
+                foreach (var function in assembly.Functions)
+                {
+                    this.verifier.VerifiyFunction(function);
+                    this.Compiler.Compile(function);
+                }
             }
 
             this.Compiler.MakeExecutable();

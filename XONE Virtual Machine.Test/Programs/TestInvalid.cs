@@ -27,7 +27,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     new List<Instruction>(),
                     new List<VMType>());
 
-                container.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
 
                 try
                 {
@@ -59,7 +59,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions,
                     new List<VMType>());
 
-                container.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
 
                 try
                 {
@@ -91,7 +91,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     instructions,
                     new List<VMType>());
 
-                container.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
 
                 try
                 {

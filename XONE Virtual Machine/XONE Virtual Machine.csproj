@@ -66,6 +66,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\IOperandStack.cs" />
+    <Compile Include="Core\Assembly.cs" />
     <Compile Include="Core\Binder.cs" />
     <Compile Include="Compiler\IJITCompiler.cs" />
     <Compile Include="Compiler\Win64\CallingConvetions.cs" />

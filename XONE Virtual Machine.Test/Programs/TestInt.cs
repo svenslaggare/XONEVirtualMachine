@@ -31,7 +31,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(funcDef, instructions, new List<VMType>());
-                container.VirtualMachine.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(3, container.Execute());
             }
         }
@@ -55,7 +55,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(funcDef, instructions, new List<VMType>());
-                container.VirtualMachine.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(2, container.Execute());
             }
         }
@@ -79,7 +79,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(funcDef, instructions, new List<VMType>());
-                container.VirtualMachine.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(6, container.Execute());
             }
         }
@@ -103,7 +103,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 instructions.Add(new Instruction(OpCodes.Ret));
 
                 var func = new Function(funcDef, instructions, new List<VMType>());
-                container.VirtualMachine.LoadFunction(func);
+                container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(4 / 2, container.Execute());
             }
         }

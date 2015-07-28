@@ -28,14 +28,14 @@ namespace XONEVirtualMachine
         }
 
         /// <summary>
-        /// Loads the given function
+        /// Loads the given assembly
         /// </summary>
-        /// <param name="function">The function</param>
-        public void LoadFunction(Function function)
+        /// <param name="assembly">The assembly</param>
+        public void LoadAssembly(Assembly assembly)
         {
-            this.VirtualMachine.LoadFunction(function);
+            this.VirtualMachine.LoadAssembly(assembly);
         }
-        
+
         /// <summary>
         /// Executes the loaded program
         /// </summary>
