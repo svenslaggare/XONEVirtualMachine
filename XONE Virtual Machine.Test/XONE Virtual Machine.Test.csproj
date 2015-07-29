@@ -54,6 +54,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Analysis\TestControlFlowGraphs.cs" />
+    <Compile Include="Analysis\TestVirtualRegisters.cs" />
+    <Compile Include="Analysis\TestLivenessAnalysis.cs" />
     <Compile Include="Programs\TestCalls.cs" />
     <Compile Include="Programs\TestLocals.cs" />
     <Compile Include="Programs\TestFloat.cs" />

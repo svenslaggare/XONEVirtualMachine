@@ -11,7 +11,44 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents a basic block
     /// </summary>
-    public class BasicBlock
+    public class BasicBlock : BasicBlock<Instruction>
+    {
+        /// <summary>
+        /// Creates a new basic block
+        /// </summary>
+        /// <param name="startOffset">The start offset</param>
+        /// <param name="instructions">The instructions</param>
+        public BasicBlock(int startOffset, IList<Instruction> instructions)
+            : base(startOffset, instructions)
+        {
+
+        }
+
+        /// <summary>
+        /// Creates the basic blocks for the given function
+        /// </summary>
+        /// <param name="function">The functions</param>
+        public static IList<BasicBlock> CreateBasicBlocks(Function function)
+        {
+            return CreateBasicBlocks(
+                function.Instructions,
+                x => x,
+                (offset, instructions) => new BasicBlock(offset, instructions));
+        }
+    }
+
+    /// <summary>
+    /// Returns the instruction for the given element
+    /// </summary>
+    /// <typeparam name="T">The type of the instruction</typeparam>
+    /// <param name="element">The instruction</param>
+    public delegate Instruction GetInstruction<T>(T element);
+
+    /// <summary>
+    /// Represents a basic block
+    /// </summary>
+    /// <typeparam name="T">The type of the instruction</typeparam>
+    public class BasicBlock<T>
     {
         /// <summary>
         /// The offset from the functions instructions
@@ -21,23 +58,23 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// The instructions in the block
         /// </summary>
-        public IReadOnlyList<Instruction> Instructions { get; }
+        public IReadOnlyList<T> Instructions { get; }
 
         /// <summary>
         /// Creates a new basic block
         /// </summary>
         /// <param name="startOffset">The start offset</param>
         /// <param name="instructions">The instructions</param>
-        private BasicBlock(int startOffset, IList<Instruction> instructions)
+        protected BasicBlock(int startOffset, IList<T> instructions)
         {
             this.StartOffset = startOffset;
-            this.Instructions = new ReadOnlyCollection<Instruction>(instructions);
+            this.Instructions = new ReadOnlyCollection<T>(instructions);
         }
 
         /// <summary>
         /// Returns the first instruction
         /// </summary>
-        public Instruction First
+        public T First
         {
             get { return this.Instructions[0]; }
         }
@@ -45,7 +82,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Returns the last instruction
         /// </summary>
-        public Instruction Last
+        public T Last
         {
             get { return this.Instructions[this.Instructions.Count - 1]; }
         }
@@ -53,15 +90,16 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Finds the leaders in the given function
         /// </summary>
-        /// <param name="function">The functions</param>
-        private static IList<int> FindLeaders(Function function)
+        /// <param name="instructions">The instructions</param>
+        /// <param name="getInstruction">Returns the instruction for the given elemenet</param>
+        private static IList<int> FindLeaders(IReadOnlyList<T> instructions, GetInstruction<T> getInstruction)
         {
             var leaders = new SortedSet<int>();
 
             bool prevIsBranch = false;
-            for (int i = 0; i < function.Instructions.Count; i++)
+            for (int i = 0; i < instructions.Count; i++)
             {
-                var instruction = function.Instructions[i];
+                var instruction = getInstruction(instructions[i]);
 
                 //The first instruction is a leader
                 if (i == 0)
@@ -99,19 +137,22 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Creates the basic blocks for the given function
         /// </summary>
-        /// <param name="function">The functions</param>
-        public static IList<BasicBlock> CreateBasicBlocks(Function function)
+        /// <param name="instructions">The instructions</param>
+        /// <param name="getInstruction">Function to return a instruction for the given T element</param>
+        /// <param name="createBlock">Creates a new basic block</param>
+        public static IList<TBlock> CreateBasicBlocks<TBlock>(IReadOnlyList<T> instructions,
+            GetInstruction<T> getInstruction, Func<int, IList<T>, TBlock> createBlock)
+            where TBlock : BasicBlock<T>
         {
-            var instructions = function.Instructions;
-            var blocks = new List<BasicBlock>();
+            var blocks = new List<TBlock>();
 
             //Find the leaders
-            var leaders = FindLeaders(function);
+            var leaders = FindLeaders(instructions, getInstruction);
 
             //Now construct the blocks
             for (int leaderIndex = 0; leaderIndex < leaders.Count; leaderIndex++)
             {
-                var blockInstructions = new List<Instruction>();
+                var blockInstructions = new List<T>();
                 var current = leaders[leaderIndex];
 
                 if (leaderIndex + 1 < leaders.Count)
@@ -129,7 +170,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     }
                 }
 
-                blocks.Add(new BasicBlock(current, blockInstructions));
+                blocks.Add(createBlock(current, blockInstructions));
             }
 
             return blocks;
