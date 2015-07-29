@@ -43,6 +43,11 @@ namespace XONEVirtualMachine.Core
         public IReadOnlyList<IList<VMType>> OperandTypes { get; }
 
         /// <summary>
+        /// Indicates if to optimize the function
+        /// </summary>
+        public bool Optimize { get; set; }
+
+        /// <summary>
         /// Creates a new function
         /// </summary>
         /// <param name="definition">The function definition</param>

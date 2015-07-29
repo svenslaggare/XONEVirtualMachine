@@ -22,6 +22,8 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// </summary>
         public IList<LiveInterval> Spilled { get; }
 
+        private readonly IDictionary<int, int> registers = new Dictionary<int, int>();
+
         /// <summary>
         /// Creates a new register allocation
         /// </summary>
@@ -31,6 +33,26 @@ namespace XONEVirtualMachine.Compiler.Analysis
         {
             this.Allocated = new ReadOnlyDictionary<LiveInterval, int>(allocated);
             this.Spilled = new ReadOnlyCollection<LiveInterval>(spilled);
+
+            foreach (var interval in this.Allocated)
+            {
+                this.registers.Add(interval.Key.VirtualRegister, interval.Value);
+            }
+        }
+
+        /// <summary>
+        /// Returns the register for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        public int? GetRegister(int virtualRegister)
+        {
+            int reg;
+            if (this.registers.TryGetValue(virtualRegister, out reg))
+            {
+                return reg;
+            }
+
+            return null;
         }
     }
 

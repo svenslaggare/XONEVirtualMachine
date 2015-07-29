@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -58,18 +59,63 @@ namespace XONEVirtualMachine
             return new Function(def, instructions, new List<VMType>());
         }
 
+        private static Function CreateSumFunction(Win64Container container, int count, int loopCount)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>() { }, intType);
+
+            var instructions = new List<Instruction>();
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, loopCount));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+
+            for (int i = 1; i < count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i + 1));
+                instructions.Add(new Instruction(OpCodes.AddInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 1));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.BranchGreaterThan, 2));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { intType, intType })
+            {
+                Optimize = true
+            };
+        }
+
         static void Main(string[] args)
         {
             using (var container = new Win64Container())
             {
-                var assembly = new Assembly(new List<Function>()
-                {
-                    CreateAddFunction(container, 4),
-                    CreateMainFunction(container, 4)
-                });
+                var assembly = Assembly.SingleFunction(CreateSumFunction(container, 100, 1000000));
 
                 container.LoadAssembly(assembly);
-                Console.WriteLine(container.Execute());
+                container.VirtualMachine.Compile();
+
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                int returnValue = container.VirtualMachine.GetEntryPoint()();
+                var elapsed = stopwatch.Elapsed;
+
+                Console.WriteLine(returnValue);
+                Console.WriteLine(elapsed.TotalMilliseconds);
             }
 
             Console.ReadLine();

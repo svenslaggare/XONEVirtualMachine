@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using XONEVirtualMachine.Compiler.Analysis;
 using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
@@ -45,9 +47,27 @@ namespace XONEVirtualMachine.Compiler.Win64
             var function = compilationData.Function;
             this.CreateProlog(compilationData);
 
+            RegisterAllocation registerAllocation = null;
+            IList<VirtualRegisterInstruction> virtualInstructions = null;
+
+            if (function.Optimize)
+            {
+                virtualInstructions = VirtualRegisters.Create(function.Instructions);
+                registerAllocation = LinearScanRegisterAllocation.Allocate(
+                    LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
+                        VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualRegisterInstruction>(virtualInstructions)))));
+            }
+
             for (int i = 0; i < function.Instructions.Count; i++)
             {
-                this.GenerateInstruction(compilationData, function.Instructions[i], i);
+                if (function.Optimize)
+                {
+                    this.GenerateOptimizedInstruction(compilationData, registerAllocation, virtualInstructions[i], i);
+                }
+                else
+                {
+                    this.GenerateInstruction(compilationData, function.Instructions[i], i);
+                }
             }
         }
 
@@ -340,6 +360,223 @@ namespace XONEVirtualMachine.Compiler.Win64
                             generatedCode.AddRange(new byte[] { 0x0f, 0x2e, 0xc1 }); //ucomiss xmm0, xmm1
                             unsignedComparison = true;
                         }
+
+                        switch (instruction.OpCode)
+                        {
+                            case OpCodes.BranchEqual:
+                                Assembler.JumpEqual(generatedCode, 0); // je <target>
+                                break;
+                            case OpCodes.BranchNotEqual:
+                                Assembler.JumpNotEqual(generatedCode, 0); // jne <target>
+                                break;
+                            case OpCodes.BranchGreaterThan:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpGreaterThanUnsigned(generatedCode, 0); // jg <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpGreaterThan(generatedCode, 0); // jg <target>
+                                }
+                                break;
+                            case OpCodes.BranchGreaterOrEqual:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpGreaterThanOrEqualUnsigned(generatedCode, 0); // jge <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpGreaterThanOrEqual(generatedCode, 0); // jge <target>
+                                }
+                                break;
+                            case OpCodes.BranchLessThan:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpLessThanUnsigned(generatedCode, 0); // jl <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpLessThan(generatedCode, 0); // jl <target>
+                                }
+                                break;
+                            case OpCodes.BranchLessOrEqual:
+                                if (unsignedComparison)
+                                {
+                                    Assembler.JumpLessThanOrEqualUnsigned(generatedCode, 0); // jle <target>
+                                }
+                                else
+                                {
+                                    Assembler.JumpLessThanOrEqual(generatedCode, 0); // jle <target>
+                                }
+                                break;
+                        }
+
+                        compilationData.UnresolvedBranches.Add(
+                            generatedCode.Count - 6,
+                            new UnresolvedBranchTarget(instruction.IntValue, 6));
+                    }
+                    break;
+            }
+        }
+
+        private struct RegisterEither
+        {
+            public bool IsLeft { get; set; }
+            public Registers LeftReg { get; set; }
+            public Registers RightRef { get; set; }
+        }
+
+        private RegisterEither GetRegister(int register)
+        {
+            if (register == 0)
+            {
+                return new RegisterEither() { IsLeft = true, LeftReg = Registers.AX };
+            }
+
+            if (register == 1)
+            {
+                return new RegisterEither() { IsLeft = true, LeftReg = Registers.CX };
+            }
+
+            if (register == 2)
+            {
+                return new RegisterEither() { IsLeft = true, LeftReg = Registers.DX };
+            }
+
+            return new RegisterEither();
+        }
+
+        /// <summary>
+        /// Generates optimized native code for the given instruction
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        /// <param name="registerAllocation">The register allocation data</param>
+        /// <param name="instruction">The current instruction</param>
+        /// <param name="index">The index of the instruction</param>
+        private void GenerateOptimizedInstruction(CompilationData compilationData, RegisterAllocation registerAllocation,
+            VirtualRegisterInstruction virtualRegister, int index)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var operandStack = compilationData.OperandStack;
+            var funcDef = compilationData.Function.Definition;
+            int stackOffset = 1;
+
+            compilationData.InstructionMapping.Add(generatedCode.Count);
+
+            var instruction = virtualRegister.Instruction;
+
+            switch (instruction.OpCode)
+            {
+                case OpCodes.LoadInt:
+                    Assembler.MoveIntToRegister(
+                        generatedCode,
+                        GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg,
+                        instruction.IntValue);
+                    break;
+                case OpCodes.AddInt:
+                case OpCodes.SubInt:
+                case OpCodes.MulInt:
+                case OpCodes.DivInt:
+                    {
+                        var op2Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+                        var op1Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[1]) ?? 0).LeftReg;
+                        var storeReg = GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg;
+
+                        switch (instruction.OpCode)
+                        {
+                            case OpCodes.AddInt:
+                                Assembler.AddRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                break;
+                            case OpCodes.SubInt:
+                                Assembler.SubRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                break;
+                            case OpCodes.MulInt:
+                                Assembler.MultRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                break;
+                            case OpCodes.DivInt:
+                                //This sign extends the eax register
+                                generatedCode.Add(0x99); //cdq
+                                Assembler.DivRegisterFromRegister(generatedCode, op1Reg, op2Reg, true);
+                                break;
+                        }
+
+                        if (op1Reg != storeReg)
+                        {
+                            Assembler.MoveRegisterToRegister(generatedCode, storeReg, op1Reg);
+                        }
+                    }
+                    break;
+                case OpCodes.Ret:
+                    {
+                        //Handle the return value
+                        var opReg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+
+                        if (opReg != Registers.AX)
+                        {
+                            Assembler.MoveRegisterToRegister(generatedCode, Registers.AX, opReg);
+                        }
+
+                        //Restore the base pointer
+                        this.CreateEpilog(compilationData);
+
+                        //Make the return
+                        Assembler.Return(generatedCode);
+                    }
+                    break;
+                case OpCodes.LoadLocal:
+                case OpCodes.StoreLocal:
+                    {
+                        //Load rax with the locals offset
+                        int localOffset =
+                            (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
+                            * -Assembler.RegisterSize;
+
+                        if (instruction.OpCode == OpCodes.LoadLocal)
+                        {
+                            var storeReg = GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg;
+
+                            //Load register with the local
+                            Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                                generatedCode,
+                                storeReg,
+                                Registers.BP,
+                                localOffset); //mov <reg>, [rbp+<offset>]
+                        }
+                        else
+                        {
+                            var opReg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+
+                            //Store the operand at the given local
+                            Assembler.MoveRegisterToMemoryRegisterWithOffset(
+                                generatedCode,
+                                Registers.BP,
+                                localOffset,
+                                opReg); //mov [rbp+<local offset>], <reg>
+                        }
+                    }
+                    break;
+                case OpCodes.Branch:
+                    Assembler.Jump(generatedCode, 0); //jmp <target>
+
+                    compilationData.UnresolvedBranches.Add(
+                        generatedCode.Count - 5,
+                        new UnresolvedBranchTarget(instruction.IntValue, 5));
+                    break;
+                case OpCodes.BranchEqual:
+                case OpCodes.BranchNotEqual:
+                case OpCodes.BranchGreaterThan:
+                case OpCodes.BranchGreaterOrEqual:
+                case OpCodes.BranchLessThan:
+                case OpCodes.BranchLessOrEqual:
+                    {
+                        var opType = compilationData.Function.OperandTypes[index].Last();
+                        bool unsignedComparison = false;
+
+                        var op2Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+                        var op1Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[1]) ?? 0).LeftReg;
+
+                        //Compare
+                        Assembler.CompareRegisterToRegister(generatedCode, op1Reg, op2Reg);
 
                         switch (instruction.OpCode)
                         {
