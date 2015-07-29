@@ -11,7 +11,7 @@ namespace XONEVirtualMachine.Core
     /// </summary>
     public class TypeProvider
     {
-        private IDictionary<string, VMType> types = new Dictionary<string, VMType>();
+        private readonly IDictionary<string, VMType> types = new Dictionary<string, VMType>();
 
         /// <summary>
         /// Creates a new type provider

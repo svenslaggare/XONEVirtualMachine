@@ -11,43 +11,6 @@ namespace XONEVirtualMachine
 	class Program
 	{
         /// <summary>
-        /// Creates the test function
-        /// </summary>
-        private static Function CreateTestFunction(Win64Container container)
-        {
-            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
-            var def = new FunctionDefinition("test", new List<VMType>(), intType);
-
-            var instructions = new List<Instruction>();
-
-            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
-            instructions.Add(new Instruction(OpCodes.LoadInt, 2));
-            instructions.Add(new Instruction(OpCodes.Pop));
-            instructions.Add(new Instruction(OpCodes.Ret));
-
-            var func = new Function(def, instructions, new List<VMType>());
-            container.VirtualMachine.LoadAssembly(Assembly.SingleFunction(func));
-            return func;
-        }
-
-        /// <summary>
-        /// Creates the main function
-        /// </summary>
-        private static Function CreateMainFunction(Win64Container container)
-        {
-            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
-            var def = new FunctionDefinition("main", new List<VMType>(), intType);
-
-            var instructions = new List<Instruction>();
-            instructions.Add(new Instruction(OpCodes.Call, "test", new List<VMType>()));
-            instructions.Add(new Instruction(OpCodes.Ret));
-
-            var func = new Function(def, instructions, new List<VMType>());
-            container.VirtualMachine.LoadAssembly(Assembly.SingleFunction(func));
-            return func;
-        }
-
-        /// <summary>
         /// Creates a main function that calls the add function with the given number of arguments
         /// </summary>
         /// <param name="container">The container</param>
@@ -104,8 +67,6 @@ namespace XONEVirtualMachine
                     CreateAddFunction(container, 4),
                     CreateMainFunction(container, 4)
                 });
-                //CreateTestFunction(container);
-                //CreateMainFunction(container);
 
                 container.LoadAssembly(assembly);
                 Console.WriteLine(container.Execute());

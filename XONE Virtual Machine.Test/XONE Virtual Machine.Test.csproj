@@ -53,6 +53,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Analysis\TestControlFlowGraphs.cs" />
     <Compile Include="Programs\TestCalls.cs" />
     <Compile Include="Programs\TestLocals.cs" />
     <Compile Include="Programs\TestFloat.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="Programs\TestInvalid.cs" />
     <Compile Include="Programs\TestFunctions.cs" />
     <Compile Include="Programs\TestBranches.cs" />
+    <Compile Include="Analysis\TestBasicBlocks.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

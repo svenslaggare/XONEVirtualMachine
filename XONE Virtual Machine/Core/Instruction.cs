@@ -149,4 +149,24 @@ namespace XONEVirtualMachine.Core
             return this.stringRepresentation;
         }
     }
+
+    /// <summary>
+    /// Contains helper methods for instructions
+    /// </summary>
+    public static class InstructionHelpers
+    {
+        /// <summary>
+        /// Indicates if the given instruction is a conditional branch
+        /// </summary>
+        /// <param name="instruction">The instruction</param>
+        public static bool IsConditionalBranch(Instruction instruction)
+        {
+            return instruction.OpCode == OpCodes.BranchEqual
+                    || instruction.OpCode == OpCodes.BranchNotEqual
+                    || instruction.OpCode == OpCodes.BranchGreaterThan
+                    || instruction.OpCode == OpCodes.BranchGreaterOrEqual
+                    || instruction.OpCode == OpCodes.BranchLessThan
+                    || instruction.OpCode == OpCodes.BranchLessOrEqual;
+        }
+    }
 }
