@@ -49,7 +49,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var basicBlocks = BasicBlock.CreateBasicBlocks(func);
                 var controlGraph = ControlFlowGraph.FromBasicBlocks(basicBlocks);
 
-                Assert.AreEqual(2, controlGraph.Edges.Count);
+                Assert.AreEqual(3, controlGraph.Edges.Count);
 
                 Assert.AreEqual(2, controlGraph.Edges[basicBlocks[0]].Count);
                 Assert.AreEqual(true, controlGraph.Edges[basicBlocks[0]].SetEquals(new HashSet<ControlFlowEdge>()
@@ -62,6 +62,12 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 Assert.AreEqual(true, controlGraph.Edges[basicBlocks[1]].SetEquals(new HashSet<ControlFlowEdge>()
                 {
                     new ControlFlowEdge(basicBlocks[1], basicBlocks[3])
+                }));
+
+                Assert.AreEqual(1, controlGraph.Edges[basicBlocks[2]].Count);
+                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[2]].SetEquals(new HashSet<ControlFlowEdge>()
+                {
+                    new ControlFlowEdge(basicBlocks[2], basicBlocks[3])
                 }));
             }
         }

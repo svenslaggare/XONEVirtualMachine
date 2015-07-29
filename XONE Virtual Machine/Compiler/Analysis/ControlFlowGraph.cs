@@ -118,6 +118,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     {
                         AddEdge(block, targetBlock);
                     }
+                    else
+                    {
+                        AddEdge(block, offsetMapping[block.StartOffset + block.Instructions.Count]);
+                    }
                 }
             }
 
