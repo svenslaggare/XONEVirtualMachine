@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Compiler\Analysis\BasicBlock.cs" />
     <Compile Include="Compiler\Analysis\ControlFlowGraph.cs" />
+    <Compile Include="Compiler\Analysis\LinearScanRegisterAllocation.cs" />
     <Compile Include="Compiler\Analysis\LivenessAnalysis.cs" />
     <Compile Include="Compiler\Analysis\VirtualRegisters.cs" />
     <Compile Include="Compiler\IOperandStack.cs" />
