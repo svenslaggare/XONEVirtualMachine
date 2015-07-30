@@ -72,7 +72,19 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="instructions">The instructions</param>
         public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions)
         {
+            IList<int> localRegisters;
+            return Create(instructions, out localRegisters);
+        }
+
+        /// <summary>
+        /// Creates the virtual registers IR for the given instructions
+        /// </summary>
+        /// <param name="instructions">The instructions</param>
+        /// <param name="localRegisters">The local registers</param>
+        public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions, out IList<int> localRegisters)
+        {
             var virtualInstructions = new List<VirtualInstruction>();
+            localRegisters = new List<int>();
 
             int virtualRegister = 0;
             int numStackRegisters = 0;
@@ -151,13 +163,13 @@ namespace XONEVirtualMachine.Compiler.Analysis
             foreach (var local in localInstructions)
             {
                 var instruction = virtualInstructions[local];
-                int localIndex = instruction.Instruction.IntValue;
+                int localRegister = numStackRegisters + instruction.Instruction.IntValue;
 
                 if (instruction.Instruction.OpCode == OpCodes.LoadLocal)
                 {
                     instruction = new VirtualInstruction(
                         instruction.Instruction,
-                        new List<int>() { numStackRegisters + localIndex },
+                        new List<int>() { localRegister },
                         instruction.AssignRegister);
                 }
                 else
@@ -165,10 +177,11 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     instruction = new VirtualInstruction(
                         instruction.Instruction,
                         instruction.UsesRegisters.ToList(),
-                        numStackRegisters + localIndex);
+                        localRegister);
                 }
 
                 virtualInstructions[local] = instruction;
+                localRegisters.Add(localRegister);
             }
 
             return virtualInstructions;

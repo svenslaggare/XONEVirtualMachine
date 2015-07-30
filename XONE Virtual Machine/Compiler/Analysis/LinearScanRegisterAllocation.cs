@@ -40,15 +40,12 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// </summary>
     public class RegisterAllocation
     {
-        /// <summary>
-        /// The allocated registers
-        /// </summary>
-        public IReadOnlyDictionary<LiveInterval, int> Allocated { get; }
+        private readonly IReadOnlyDictionary<LiveInterval, int> allocated;
 
         /// <summary>
         /// The spilled registers
         /// </summary>
-        public IList<LiveInterval> Spilled { get; }
+        public IReadOnlyList<LiveInterval> Spilled { get; }
 
         private readonly IDictionary<int, AllocatedRegister> registers = new Dictionary<int, AllocatedRegister>();
 
@@ -59,13 +56,21 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="spilled">The spilled registers</param>
         public RegisterAllocation(IDictionary<LiveInterval, int> allocated, IList<LiveInterval> spilled)
         {
-            this.Allocated = new ReadOnlyDictionary<LiveInterval, int>(allocated);
+            this.allocated = new ReadOnlyDictionary<LiveInterval, int>(allocated);
             this.Spilled = new ReadOnlyCollection<LiveInterval>(spilled);
 
-            foreach (var interval in this.Allocated)
+            foreach (var interval in this.allocated)
             {
                 this.registers.Add(interval.Key.VirtualRegister, new AllocatedRegister(interval.Value, interval.Key));
             }
+        }
+
+        /// <summary>
+        /// Returns the number of allocated registers
+        /// </summary>
+        public int NumAllocatedRegisters
+        {
+            get { return this.allocated.Count; }
         }
 
         /// <summary>

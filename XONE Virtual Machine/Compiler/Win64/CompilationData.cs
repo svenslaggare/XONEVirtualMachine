@@ -46,6 +46,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         public IReadOnlyList<VirtualInstruction> VirtualInstructions { get; }
 
         /// <summary>
+        /// The virtual registers for locals
+        /// </summary>
+        public IReadOnlyList<int> LocalVirtualRegisters { get; }
+
+        /// <summary>
         /// The register allocation
         /// </summary>
         /// <remarks>Only has value if the function is optimized.</remarks>
@@ -62,7 +67,12 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (function.Optimize)
             {
-                this.VirtualInstructions = new ReadOnlyCollection<VirtualInstruction>(VirtualRegisters.Create(function.Instructions));
+                IList<int> localRegs;
+                this.VirtualInstructions = new ReadOnlyCollection<VirtualInstruction>(
+                    VirtualRegisters.Create(function.Instructions, out localRegs));
+
+                this.LocalVirtualRegisters = new ReadOnlyCollection<int>(localRegs);
+
                 this.RegisterAllocation = LinearScanRegisterAllocation.Allocate(
                     LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
                         VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))));

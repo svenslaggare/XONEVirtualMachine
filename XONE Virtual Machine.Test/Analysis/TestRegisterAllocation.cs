@@ -44,7 +44,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);
 
-                Assert.AreEqual(2, registerAllocation.Allocated.Count);
+                Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
                 Assert.AreEqual(0, registerAllocation.Spilled.Count);
             }
         }
@@ -81,7 +81,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
 
-                Assert.AreEqual(2, registerAllocation.Allocated.Count);
+                Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
                 Assert.AreEqual(1, registerAllocation.Spilled.Count);
             }
         }
@@ -122,7 +122,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);
 
-                Assert.AreEqual(2, registerAllocation.Allocated.Count);
+                Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
                 Assert.AreEqual(0, registerAllocation.Spilled.Count);
             }
         }
@@ -146,7 +146,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
 
-                Assert.AreEqual(3, registerAllocation.Allocated.Count);
+                Assert.AreEqual(3, registerAllocation.NumAllocatedRegisters);
                 Assert.AreEqual(0, registerAllocation.Spilled.Count);
 
                 Assert.AreEqual(0, registerAllocation.GetRegister(0));

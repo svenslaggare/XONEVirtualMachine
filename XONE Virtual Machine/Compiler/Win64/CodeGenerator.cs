@@ -132,26 +132,17 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             var func = compilationData.Function;
 
-            //TODO: Better local initialization
-            var initializedLocals = new HashSet<int>();
-
-            foreach (var instruction in compilationData.VirtualInstructions)
+            foreach (var localRegister in compilationData.LocalVirtualRegisters)
             {
-                if (instruction.Instruction.OpCode == OpCodes.LoadLocal
-                    && !initializedLocals.Contains(instruction.Instruction.IntValue))
+                var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(localRegister));
+
+                if (localReg.IsBase)
                 {
-                    var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(instruction.UsesRegisters[0]));
-
-                    if (localReg.IsBase)
-                    {
-                        Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.BaseRegister, localReg.BaseRegister);
-                    }
-                    else
-                    {
-                        Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.ExtendedRegister, localReg.ExtendedRegister);
-                    }
-
-                    initializedLocals.Add(instruction.Instruction.IntValue);
+                    Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.BaseRegister, localReg.BaseRegister);
+                }
+                else
+                {
+                    Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.ExtendedRegister, localReg.ExtendedRegister);
                 }
             }
         }
