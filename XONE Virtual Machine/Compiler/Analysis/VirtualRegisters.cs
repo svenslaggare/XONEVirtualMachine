@@ -11,7 +11,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents an instruction using virtual registers
     /// </summary>
-    public class VirtualRegisterInstruction
+    public class VirtualInstruction
     {
         /// <summary>
         /// The instruction
@@ -34,7 +34,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="instruction">The instruction</param>
         /// <param name="usesRegisters">The registers that is being used</param>
         /// <param name="assignRegister">The register that the instruction assigns to</param>
-        public VirtualRegisterInstruction(Instruction instruction, IList<int> usesRegisters, int? assignRegister = null)
+        public VirtualInstruction(Instruction instruction, IList<int> usesRegisters, int? assignRegister = null)
         {
             this.Instruction = instruction;
             this.UsesRegisters = new ReadOnlyCollection<int>(usesRegisters);
@@ -70,15 +70,23 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Creates the virtual registers IR for the given instructions
         /// </summary>
         /// <param name="instructions">The instructions</param>
-        public static IList<VirtualRegisterInstruction> Create(IReadOnlyList<Instruction> instructions)
+        public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions)
         {
-            var virtualInstructions = new List<VirtualRegisterInstruction>();
+            var virtualInstructions = new List<VirtualInstruction>();
 
             int virtualRegister = 0;
-
+            int numStackRegisters = 0;
             Func<int> UseRegister = () => --virtualRegister;
-            Func<int> AssignRegister = () => virtualRegister++;
+            Func<int> AssignRegister = () =>
+            {
+                int reg = virtualRegister++;
+                numStackRegisters = Math.Max(virtualRegister, numStackRegisters);
+                return reg;
+            };
 
+            var localInstructions = new List<int>();
+
+            var i = 0;
             foreach (var instruction in instructions)
             {
                 var usesRegisters = new List<int>();
@@ -88,7 +96,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 {
                     case OpCodes.Pop:
                     case OpCodes.Ret:
-                    case OpCodes.StoreLocal:
+                    //case OpCodes.StoreLocal:
                         usesRegisters.Add(UseRegister());
                         break;
                     case OpCodes.AddInt:
@@ -104,14 +112,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
                         assignRegister = AssignRegister();
                         break;
                     case OpCodes.Call:
-                        for (int i = 0; i < instruction.Parameters.Count; i++)
+                        for (int arg = 0; arg < instruction.Parameters.Count; arg++)
                         {
                             usesRegisters.Add(UseRegister());
                         }
                         assignRegister = AssignRegister();
                         break;
                     case OpCodes.LoadArgument:
-                    case OpCodes.LoadLocal:
+                    //case OpCodes.LoadLocal:
                     case OpCodes.LoadInt:
                     case OpCodes.LoadFloat:
                         assignRegister = AssignRegister();
@@ -125,9 +133,42 @@ namespace XONEVirtualMachine.Compiler.Analysis
                         usesRegisters.Add(UseRegister());
                         usesRegisters.Add(UseRegister());
                         break;
+                    case OpCodes.LoadLocal:
+                        assignRegister = AssignRegister();
+                        localInstructions.Add(i);
+                        break;
+                    case OpCodes.StoreLocal:
+                        usesRegisters.Add(UseRegister());
+                        localInstructions.Add(i);
+                        break;
                 }
 
-                virtualInstructions.Add(new VirtualRegisterInstruction(instruction, usesRegisters, assignRegister));
+                virtualInstructions.Add(new VirtualInstruction(instruction, usesRegisters, assignRegister));
+                i++;
+            }
+
+            //After all stack operands has been assigned to virtual registers, assign locals.
+            foreach (var local in localInstructions)
+            {
+                var instruction = virtualInstructions[local];
+                int localIndex = instruction.Instruction.IntValue;
+
+                if (instruction.Instruction.OpCode == OpCodes.LoadLocal)
+                {
+                    instruction = new VirtualInstruction(
+                        instruction.Instruction,
+                        new List<int>() { numStackRegisters + localIndex },
+                        instruction.AssignRegister);
+                }
+                else
+                {
+                    instruction = new VirtualInstruction(
+                        instruction.Instruction,
+                        instruction.UsesRegisters.ToList(),
+                        numStackRegisters + localIndex);
+                }
+
+                virtualInstructions[local] = instruction;
             }
 
             return virtualInstructions;
@@ -137,14 +178,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents a basic block for a virtual instruction
     /// </summary>
-    public class VirtualBasicBlock : BasicBlock<VirtualRegisterInstruction>
+    public class VirtualBasicBlock : BasicBlock<VirtualInstruction>
     {
         /// <summary>
         /// Creates a new basic block
         /// </summary>
         /// <param name="startOffset">The start offset</param>
         /// <param name="instructions">The instructions</param>
-        public VirtualBasicBlock(int startOffset, IList<VirtualRegisterInstruction> instructions)
+        public VirtualBasicBlock(int startOffset, IList<VirtualInstruction> instructions)
             : base(startOffset, instructions)
         {
 
@@ -154,7 +195,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Creates the basic blocks for the given function
         /// </summary>
         /// <param name="virtualInstructions">The virtual instructions</param>
-        public static IList<VirtualBasicBlock> CreateBasicBlocks(IReadOnlyList<VirtualRegisterInstruction> virtualInstructions)
+        public static IList<VirtualBasicBlock> CreateBasicBlocks(IReadOnlyList<VirtualInstruction> virtualInstructions)
         {
             return CreateBasicBlocks(
                 virtualInstructions,
@@ -166,7 +207,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents an edge in a control graph for virtual instructions
     /// </summary>
-    public class VirtualControlFlowEdge : ControlFlowEdge<VirtualRegisterInstruction, VirtualBasicBlock>
+    public class VirtualControlFlowEdge : ControlFlowEdge<VirtualInstruction, VirtualBasicBlock>
     {
         /// <summary>
         /// Creates a new edge
@@ -183,7 +224,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents a control flow graph for virtual instructions
     /// </summary>
-    public class VirtualControlFlowGraph : ControlFlowGraph<VirtualRegisterInstruction, VirtualBasicBlock, VirtualControlFlowEdge>
+    public class VirtualControlFlowGraph : ControlFlowGraph<VirtualInstruction, VirtualBasicBlock, VirtualControlFlowEdge>
     {
         /// <summary>
         /// Creates a new control flow graph

@@ -70,13 +70,12 @@
     <Compile Include="Compiler\Analysis\LinearScanRegisterAllocation.cs" />
     <Compile Include="Compiler\Analysis\LivenessAnalysis.cs" />
     <Compile Include="Compiler\Analysis\VirtualRegisters.cs" />
-    <Compile Include="Compiler\IOperandStack.cs" />
     <Compile Include="Compiler\UnresolvedBranchTarget.cs" />
     <Compile Include="Core\Assembly.cs" />
     <Compile Include="Core\Binder.cs" />
     <Compile Include="Compiler\IJITCompiler.cs" />
     <Compile Include="Compiler\Win64\CallingConvetions.cs" />
-    <Compile Include="Compiler\CompilationData.cs" />
+    <Compile Include="Compiler\Win64\CompilationData.cs" />
     <Compile Include="Compiler\Win64\Assembler.cs" />
     <Compile Include="Compiler\Win64\CodeGenerator.cs" />
     <Compile Include="Compiler\CodePage.cs" />

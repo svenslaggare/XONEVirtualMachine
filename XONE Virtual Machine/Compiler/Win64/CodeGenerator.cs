@@ -47,22 +47,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             var function = compilationData.Function;
             this.CreateProlog(compilationData);
 
-            RegisterAllocation registerAllocation = null;
-            IList<VirtualRegisterInstruction> virtualInstructions = null;
-
-            if (function.Optimize)
-            {
-                virtualInstructions = VirtualRegisters.Create(function.Instructions);
-                registerAllocation = LinearScanRegisterAllocation.Allocate(
-                    LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
-                        VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualRegisterInstruction>(virtualInstructions)))));
-            }
-
             for (int i = 0; i < function.Instructions.Count; i++)
             {
                 if (function.Optimize)
                 {
-                    this.GenerateOptimizedInstruction(compilationData, registerAllocation, virtualInstructions[i], i);
+                    this.GenerateOptimizedInstruction(compilationData, compilationData.VirtualInstructions[i], i);
                 }
                 else
                 {
@@ -96,7 +85,16 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
-            this.ZeroLocals(compilationData);
+
+            //Zero locals
+            if (function.Optimize)
+            {
+                this.ZeroLocalsOptimized(compilationData);
+            }
+            else
+            {
+                this.ZeroLocals(compilationData);
+            }
         }
 
         /// <summary>
@@ -122,6 +120,38 @@ namespace XONEVirtualMachine.Compiler.Win64
                         Registers.BP,
                         localOffset,
                         Registers.AX); //mov [rbp-local], rax
+                }
+            }
+        }
+
+        /// <summary>
+        /// Zeroes the locals
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void ZeroLocalsOptimized(CompilationData compilationData)
+        {
+            var func = compilationData.Function;
+
+            //TODO: Better local initialization
+            var initializedLocals = new HashSet<int>();
+
+            foreach (var instruction in compilationData.VirtualInstructions)
+            {
+                if (instruction.Instruction.OpCode == OpCodes.LoadLocal
+                    && !initializedLocals.Contains(instruction.Instruction.IntValue))
+                {
+                    var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(instruction.UsesRegisters[0]));
+
+                    if (localReg.IsBase)
+                    {
+                        Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.BaseRegister, localReg.BaseRegister);
+                    }
+                    else
+                    {
+                        Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.ExtendedRegister, localReg.ExtendedRegister);
+                    }
+
+                    initializedLocals.Add(instruction.Instruction.IntValue);
                 }
             }
         }
@@ -179,7 +209,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             Assembler.AddRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
                             break;
                         case OpCodes.SubInt:
-                            Assembler.SubRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            Assembler.SubRegisterFromRegister(generatedCode, Registers.AX, Registers.CX, true);
                             break;
                         case OpCodes.MulInt:
                             Assembler.MultRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
@@ -419,101 +449,278 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
         }
 
-        private struct RegisterEither
+        /// <summary>
+        /// A none integer register
+        /// </summary>
+        private struct NoneIntRegister
         {
-            public bool IsLeft { get; set; }
-            public Registers LeftReg { get; set; }
-            public Registers RightRef { get; set; }
+            public bool IsBase { get; set; }
+            public Registers BaseRegister { get; set; }
+            public NumberedRegisters ExtendedRegister { get; set; }
+
+            public static bool operator==(NoneIntRegister lhs, NoneIntRegister rhs)
+            {
+                if (lhs.IsBase != rhs.IsBase)
+                {
+                    return false;
+                }
+
+                if (lhs.IsBase)
+                {
+                    return lhs.BaseRegister == rhs.BaseRegister;
+                }
+                else
+                {
+                    return lhs.ExtendedRegister == rhs.ExtendedRegister;
+                }
+            }
+
+            public static bool operator !=(NoneIntRegister lhs, NoneIntRegister rhs)
+            {
+                return !(lhs == rhs);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is NoneIntRegister))
+                {
+                    return false;
+                }
+
+                var other = (NoneIntRegister)obj;
+                return this == other;
+            }
+
+            public override int GetHashCode()
+            {
+                if (this.IsBase)
+                {
+                    return (this.IsBase.GetHashCode() + 1) + 31 * (int)this.BaseRegister;
+                }
+                else
+                {
+                    return (this.IsBase.GetHashCode() + 1) + 31 * (int)this.ExtendedRegister;
+                }
+            }
+
+            public override string ToString()
+            {
+                if (this.IsBase)
+                {
+                    return "R" + this.BaseRegister.ToString();
+                }
+                else
+                {
+                    return this.ExtendedRegister.ToString();
+                }
+            }
         }
 
-        private RegisterEither GetRegister(int register)
+        /// <summary>
+        /// Returns the register for the given allocated register
+        /// </summary>
+        /// <param name="register">The register</param>
+        private NoneIntRegister GetRegister(int register)
         {
             if (register == 0)
             {
-                return new RegisterEither() { IsLeft = true, LeftReg = Registers.AX };
+                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.AX };
             }
-
-            if (register == 1)
+            else if (register == 1)
             {
-                return new RegisterEither() { IsLeft = true, LeftReg = Registers.CX };
+                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.CX };
             }
-
-            if (register == 2)
+            else if (register == 2)
             {
-                return new RegisterEither() { IsLeft = true, LeftReg = Registers.DX };
+                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.DX };
+            }
+            else if (register == 3)
+            {
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R8 };
+            }
+            else if (register == 4)
+            {
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R9 };
+            }
+            else if (register == 5)
+            {
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R10 };
+            }
+            else if (register == 6)
+            {
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R11 };
             }
 
-            return new RegisterEither();
+            throw new InvalidOperationException("The given register is not valid.");
+        }
+
+        /// <summary>
+        /// Generates code for a two register operand instruction
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="op1">The first operand</param>
+        /// <param name="op2">The second operand</param>
+        private void GenerateTwoRegistersInstruction(IList<byte> generatedCode, NoneIntRegister op1, NoneIntRegister op2,
+            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, NumberedRegisters, NumberedRegisters> inst2,
+            Action<IList<byte>, Registers, NumberedRegisters> inst3, Action<IList<byte>, NumberedRegisters, Registers> inst4)
+        {
+            if (op1.IsBase && op2.IsBase)
+            {
+                inst1(generatedCode, op1.BaseRegister, op2.BaseRegister);
+            }
+            else if (!op1.IsBase && !op2.IsBase)
+            {
+                inst2(generatedCode, op1.ExtendedRegister, op2.ExtendedRegister);
+            }
+            else if (op1.IsBase && !op2.IsBase)
+            {
+                inst3(generatedCode, op1.BaseRegister, op2.ExtendedRegister);
+            }
+            else
+            {
+                inst4(generatedCode, op1.ExtendedRegister, op2.BaseRegister);
+            }
         }
 
         /// <summary>
         /// Generates optimized native code for the given instruction
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
-        /// <param name="registerAllocation">The register allocation data</param>
         /// <param name="instruction">The current instruction</param>
         /// <param name="index">The index of the instruction</param>
-        private void GenerateOptimizedInstruction(CompilationData compilationData, RegisterAllocation registerAllocation,
-            VirtualRegisterInstruction virtualRegister, int index)
+        private void GenerateOptimizedInstruction(CompilationData compilationData, VirtualInstruction virtualInstruction, int index)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
             var operandStack = compilationData.OperandStack;
             var funcDef = compilationData.Function.Definition;
-            int stackOffset = 1;
+            //int stackOffset = 1;
 
             compilationData.InstructionMapping.Add(generatedCode.Count);
 
-            var instruction = virtualRegister.Instruction;
+            var instruction = virtualInstruction.Instruction;
+            var registerAllocation = compilationData.RegisterAllocation;
+
+            Func<NoneIntRegister> GetAssignRegister = () =>
+            {
+                return GetRegister(registerAllocation.GetRegister(virtualInstruction.AssignRegister.Value));
+            };
+
+            Func<int, NoneIntRegister> GetUseRegister = x =>
+            {
+                return GetRegister(registerAllocation.GetRegister(virtualInstruction.UsesRegisters[x]));
+            };
 
             switch (instruction.OpCode)
             {
                 case OpCodes.LoadInt:
-                    Assembler.MoveIntToRegister(
-                        generatedCode,
-                        GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg,
-                        instruction.IntValue);
+                    {
+                        var storeReg = GetAssignRegister();
+                       
+                        if (storeReg.IsBase)
+                        {
+                            Assembler.MoveIntToRegister(
+                                generatedCode,
+                                GetAssignRegister().BaseRegister,
+                                instruction.IntValue);
+                        }
+                        else
+                        {
+                            Assembler.MoveIntToRegister(
+                                generatedCode,
+                                GetAssignRegister().ExtendedRegister,
+                                instruction.IntValue);
+                        }
+                    }
                     break;
                 case OpCodes.AddInt:
                 case OpCodes.SubInt:
                 case OpCodes.MulInt:
                 case OpCodes.DivInt:
                     {
-                        var op2Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
-                        var op1Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[1]) ?? 0).LeftReg;
-                        var storeReg = GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg;
+                        var op2Reg = GetUseRegister(0);
+                        var op1Reg = GetUseRegister(1);
+                        var storeReg = GetAssignRegister();
 
                         switch (instruction.OpCode)
                         {
                             case OpCodes.AddInt:
-                                Assembler.AddRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                GenerateTwoRegistersInstruction(
+                                    generatedCode,
+                                    op1Reg,
+                                    op2Reg,
+                                    (gen, x, y) => Assembler.AddRegisterToRegister(gen, x, y),
+                                    Assembler.AddRegisterToRegister,
+                                    Assembler.AddRegisterToRegister,
+                                    Assembler.AddRegisterToRegister);
                                 break;
                             case OpCodes.SubInt:
-                                Assembler.SubRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                GenerateTwoRegistersInstruction(
+                                    generatedCode,
+                                    op1Reg,
+                                    op2Reg,
+                                    (gen, x, y) => Assembler.SubRegisterFromRegister(gen, x, y),
+                                    Assembler.SubRegisterFromRegister,
+                                    Assembler.SubRegisterFromRegister,
+                                    Assembler.SubRegisterFromRegister);
                                 break;
                             case OpCodes.MulInt:
-                                Assembler.MultRegisterToRegister(generatedCode, op1Reg, op2Reg, true);
+                                GenerateTwoRegistersInstruction(
+                                    generatedCode,
+                                    op1Reg,
+                                    op2Reg,
+                                    (gen, x, y) => Assembler.MultRegisterToRegister(gen, x, y),
+                                    Assembler.MultRegisterToRegister,
+                                    Assembler.MultRegisterToRegister,
+                                    Assembler.MultRegisterToRegister);
                                 break;
                             case OpCodes.DivInt:
-                                //This sign extends the eax register
+                                if (op1Reg.BaseRegister != Registers.AX)
+                                {
+                                    throw new InvalidOperationException("Internal limitation: RAX only supported as destination of division.");
+                                }
+
+                                //This sign extends the rax register
                                 generatedCode.Add(0x99); //cdq
-                                Assembler.DivRegisterFromRegister(generatedCode, op1Reg, op2Reg, true);
+
+                                GenerateTwoRegistersInstruction(
+                                    generatedCode,
+                                    op1Reg,
+                                    op2Reg,
+                                    (gen, x, y) => Assembler.DivRegisterFromRegister(gen, x, y),
+                                    null,
+                                    Assembler.DivRegisterFromRegister,
+                                    null);
                                 break;
                         }
 
                         if (op1Reg != storeReg)
                         {
-                            Assembler.MoveRegisterToRegister(generatedCode, storeReg, op1Reg);
+                            GenerateTwoRegistersInstruction(
+                                generatedCode,
+                                storeReg,
+                                op1Reg,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister);
                         }
                     }
                     break;
                 case OpCodes.Ret:
                     {
                         //Handle the return value
-                        var opReg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+                        var opReg = GetUseRegister(0);
 
-                        if (opReg != Registers.AX)
+                        if (!(opReg.IsBase && opReg.BaseRegister == Registers.AX))
                         {
-                            Assembler.MoveRegisterToRegister(generatedCode, Registers.AX, opReg);
+                            GenerateTwoRegistersInstruction(
+                                generatedCode,
+                                new NoneIntRegister() { IsBase = true, BaseRegister = Registers.AX },
+                                opReg,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister);
                         }
 
                         //Restore the base pointer
@@ -526,32 +733,61 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.LoadLocal:
                 case OpCodes.StoreLocal:
                     {
-                        //Load rax with the locals offset
-                        int localOffset =
-                            (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
-                            * -Assembler.RegisterSize;
+                        ////Load rax with the locals offset
+                        //int localOffset =
+                        //    (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
+                        //    * -Assembler.RegisterSize;
+
+                        //if (instruction.OpCode == OpCodes.LoadLocal)
+                        //{
+                        //    var storeReg = GetAssignRegister().BaseRegister;
+
+                        //    //Load register with the local
+                        //    Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                        //        generatedCode,
+                        //        storeReg,
+                        //        Registers.BP,
+                        //        localOffset); //mov <reg>, [rbp+<offset>]
+                        //}
+                        //else
+                        //{
+                        //    var opReg = GetUseRegister(0).BaseRegister;
+
+                        //    //Store the operand at the given local
+                        //    Assembler.MoveRegisterToMemoryRegisterWithOffset(
+                        //        generatedCode,
+                        //        Registers.BP,
+                        //        localOffset,
+                        //        opReg); //mov [rbp+<local offset>], <reg>
+                        //}
 
                         if (instruction.OpCode == OpCodes.LoadLocal)
                         {
-                            var storeReg = GetRegister(registerAllocation.GetRegister(virtualRegister.AssignRegister.Value) ?? 0).LeftReg;
+                            var valueReg = GetAssignRegister();
+                            var localReg = GetUseRegister(0);
 
-                            //Load register with the local
-                            Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                            GenerateTwoRegistersInstruction(
                                 generatedCode,
-                                storeReg,
-                                Registers.BP,
-                                localOffset); //mov <reg>, [rbp+<offset>]
+                                valueReg,
+                                localReg,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister);
                         }
                         else
                         {
-                            var opReg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
+                            var valueReg = GetUseRegister(0);
+                            var localReg = GetAssignRegister();
 
-                            //Store the operand at the given local
-                            Assembler.MoveRegisterToMemoryRegisterWithOffset(
+                            GenerateTwoRegistersInstruction(
                                 generatedCode,
-                                Registers.BP,
-                                localOffset,
-                                opReg); //mov [rbp+<local offset>], <reg>
+                                localReg,
+                                valueReg,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister,
+                                Assembler.MoveRegisterToRegister);
                         }
                     }
                     break;
@@ -572,11 +808,18 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var opType = compilationData.Function.OperandTypes[index].Last();
                         bool unsignedComparison = false;
 
-                        var op2Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[0]) ?? 0).LeftReg;
-                        var op1Reg = GetRegister(registerAllocation.GetRegister(virtualRegister.UsesRegisters[1]) ?? 0).LeftReg;
+                        var op2Reg = GetUseRegister(0);
+                        var op1Reg = GetUseRegister(1);
 
                         //Compare
-                        Assembler.CompareRegisterToRegister(generatedCode, op1Reg, op2Reg);
+                        GenerateTwoRegistersInstruction(
+                                generatedCode,
+                                op1Reg,
+                                op2Reg,
+                                Assembler.CompareRegisterToRegister,
+                                Assembler.CompareRegisterToRegister,
+                                Assembler.CompareRegisterToRegister,
+                                Assembler.CompareRegisterToRegister);
 
                         switch (instruction.OpCode)
                         {

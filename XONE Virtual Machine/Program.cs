@@ -59,7 +59,33 @@ namespace XONEVirtualMachine
             return new Function(def, instructions, new List<VMType>());
         }
 
-        private static Function CreateSumFunction(Win64Container container, int count, int loopCount)
+        private static Function CreateSimple(Win64Container container, int count, bool optimize = false)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>() { }, intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.AddInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { })
+            {
+                Optimize = optimize
+            };
+        }
+
+        private static Function CreateSumFunction(Win64Container container, int count, int loopCount, bool optimize = false)
         {
             var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
 
@@ -96,7 +122,36 @@ namespace XONEVirtualMachine
 
             return new Function(def, instructions, new List<VMType>() { intType, intType })
             {
-                Optimize = true
+                Optimize = optimize
+            };
+        }
+
+        private static Function CreateSumFunction2(Win64Container container, int loopCount, bool optimize = false)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>() { }, intType);
+
+            var instructions = new List<Instruction>();
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, loopCount));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.BranchGreaterThan, 2));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { intType, intType })
+            {
+                Optimize = optimize
             };
         }
 
@@ -104,7 +159,10 @@ namespace XONEVirtualMachine
         {
             using (var container = new Win64Container())
             {
-                var assembly = Assembly.SingleFunction(CreateSumFunction(container, 100, 1000000));
+                bool optimize = true;
+                var assembly = Assembly.SingleFunction(CreateSumFunction(container, 100, 1000000, optimize));
+                //var assembly = Assembly.SingleFunction(CreateSumFunction2(container, 100000000));
+                //var assembly = Assembly.SingleFunction(CreateSimple(container, 5, optimize));
 
                 container.LoadAssembly(assembly);
                 container.VirtualMachine.Compile();

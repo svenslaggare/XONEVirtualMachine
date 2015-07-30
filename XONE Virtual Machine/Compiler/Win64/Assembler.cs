@@ -153,6 +153,19 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
+        public static void MoveRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x89);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Moves content of the second register to the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
         public static void MoveRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, Registers source)
         {
             codeGenerator.Add(0x49);
@@ -476,7 +489,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Moves the given integer (32-bits) to the given register
+        /// Moves the given integer to the given register
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
@@ -484,6 +497,24 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void MoveIntToRegister(IList<byte> codeGenerator, Registers destination, int value)
         {
             codeGenerator.Add(0x48);
+            codeGenerator.Add(0xc7);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination));
+
+            foreach (var component in BitConverter.GetBytes(value))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Moves the given integer to the given register
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="value">The value</param>
+        public static void MoveIntToRegister(IList<byte> codeGenerator, NumberedRegisters destination, int value)
+        {
+            codeGenerator.Add(0x49);
             codeGenerator.Add(0xc7);
             codeGenerator.Add((byte)(0xc0 | (byte)destination));
 
@@ -669,6 +700,45 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Adds the second register to the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void AddRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x01);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Adds the second register to the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void AddRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, Registers source)
+        {
+            codeGenerator.Add(0x49);
+            codeGenerator.Add(0x01);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Adds the second register to the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void AddRegisterToRegister(IList<byte> codeGenerator, Registers destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x01);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
         /// Adds the given integer constant to the given register
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>
@@ -757,7 +827,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
         /// <param name="is32bits">Indicates if a 32-bits register</param>
-        public static void SubRegisterToRegister(IList<byte> codeGenerator, Registers destination, Registers source, bool is32bits = false)
+        public static void SubRegisterFromRegister(IList<byte> codeGenerator, Registers destination, Registers source, bool is32bits = false)
         {
             if (!is32bits)
             {
@@ -768,6 +838,44 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
         }
 
+        /// <summary>
+        /// Subtracts the second register from the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void SubRegisterFromRegister(IList<byte> codeGenerator, NumberedRegisters destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x29);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Subtracts the second register from the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void SubRegisterFromRegister(IList<byte> codeGenerator, NumberedRegisters destination, Registers source)
+        {
+            codeGenerator.Add(0x49);
+            codeGenerator.Add(0x29);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Subtracts the second register from the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void SubRegisterFromRegister(IList<byte> codeGenerator, Registers destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x29);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
 
         /// <summary>
         /// Subtracts the given constant from the given register
@@ -876,6 +984,48 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
+        public static void MultRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0xaf);
+            codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Multiplies the first register by the second
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void MultRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, Registers source)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0xaf);
+            codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Multiplies the first register by the second
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void MultRegisterToRegister(IList<byte> codeGenerator, Registers destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x49);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0xaf);
+            codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Multiplies the first register by the second
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
         public static void MultRegisterToRegister(IList<byte> codeGenerator, FloatRegisters destination, FloatRegisters source)
         {
             codeGenerator.Add(0xf3);
@@ -895,7 +1045,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             if (destination != Registers.AX)
             {
-                throw new ArgumentException("Only the AX register is supported as dest.");
+                throw new ArgumentException("Only the AX register is supported as destination.");
             }
 
             if (!is32bits)
@@ -903,6 +1053,24 @@ namespace XONEVirtualMachine.Compiler.Win64
                 codeGenerator.Add(0x48);
             }
 
+            codeGenerator.Add(0xf7);
+            codeGenerator.Add((byte)(0xf8 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Divides the second register from the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void DivRegisterFromRegister(IList<byte> codeGenerator, Registers destination, NumberedRegisters source)
+        {
+            if (destination != Registers.AX)
+            {
+                throw new ArgumentException("Only the AX register is supported as destination.");
+            }
+
+            codeGenerator.Add(0x49);
             codeGenerator.Add(0xf7);
             codeGenerator.Add((byte)(0xf8 | (byte)source | (byte)((byte)destination << 3)));
         }
@@ -976,6 +1144,19 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// XOR's the second register to the first
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source register</param>
+        public static void XorRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters destination, NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x31);
+            codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
         /// NOT's the register
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>
@@ -1005,6 +1186,44 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add((byte)(0xc0 | (byte)register1 | (byte)((byte)register2 << 3)));
         }
 
+        /// <summary>
+        /// Compares the two registers
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2">The second register</param>
+        public static void CompareRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters register1, NumberedRegisters register2)
+        {
+            codeGenerator.Add(0x4d);
+            codeGenerator.Add(0x39);
+            codeGenerator.Add((byte)(0xc0 | (byte)register1 | (byte)((byte)register2 << 3)));
+        }
+
+        /// <summary>
+        /// Compares the two registers
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2">The second register</param>
+        public static void CompareRegisterToRegister(IList<byte> codeGenerator, NumberedRegisters register1, Registers register2)
+        {
+            codeGenerator.Add(0x49);
+            codeGenerator.Add(0x39);
+            codeGenerator.Add((byte)(0xc0 | (byte)register1 | (byte)((byte)register2 << 3)));
+        }
+
+        /// <summary>
+        /// Compares the two registers
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2">The second register</param>
+        public static void CompareRegisterToRegister(IList<byte> codeGenerator, Registers register1, NumberedRegisters register2)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x39);
+            codeGenerator.Add((byte)(0xc0 | (byte)register1 | (byte)((byte)register2 << 3)));
+        }
         /// <summary>
         /// Jumps to the target relative the current instruction
         /// </summary>

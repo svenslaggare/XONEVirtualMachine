@@ -8,6 +8,34 @@ using System.Threading.Tasks;
 namespace XONEVirtualMachine.Compiler.Analysis
 {
     /// <summary>
+    /// Represents an allocated register
+    /// </summary>
+    public struct AllocatedRegister
+    {
+        /// <summary>
+        /// The hardware register
+        /// </summary>
+        public int HardwareRegister { get; }
+
+        /// <summary>
+        /// The liveness information
+        /// </summary>
+        public LiveInterval LiveInterval { get; }
+
+        /// <summary>
+        /// Creates a new allocated register
+        /// </summary>
+        /// <param name="hardwareRegister">The hardware register</param>
+        /// <param name="liveInterval">The liveness information</param>
+        public AllocatedRegister(int hardwareRegister, LiveInterval liveInterval)
+        {
+            this.HardwareRegister = hardwareRegister;
+            this.LiveInterval = liveInterval;
+        }
+    }
+
+
+    /// <summary>
     /// Represents a register allocation
     /// </summary>
     public class RegisterAllocation
@@ -22,7 +50,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// </summary>
         public IList<LiveInterval> Spilled { get; }
 
-        private readonly IDictionary<int, int> registers = new Dictionary<int, int>();
+        private readonly IDictionary<int, AllocatedRegister> registers = new Dictionary<int, AllocatedRegister>();
 
         /// <summary>
         /// Creates a new register allocation
@@ -36,7 +64,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
 
             foreach (var interval in this.Allocated)
             {
-                this.registers.Add(interval.Key.VirtualRegister, interval.Value);
+                this.registers.Add(interval.Key.VirtualRegister, new AllocatedRegister(interval.Value, interval.Key));
             }
         }
 
@@ -44,15 +72,30 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Returns the register for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public int? GetRegister(int virtualRegister)
+        public int GetRegister(int virtualRegister)
         {
-            int reg;
-            if (this.registers.TryGetValue(virtualRegister, out reg))
+            AllocatedRegister allocatedRegister;
+            if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
             {
-                return reg;
+                return allocatedRegister.HardwareRegister;
             }
 
-            return null;
+            throw new InvalidOperationException("The given virtual register is not valid.");
+        }
+
+        /// <summary>
+        /// Returns the register allocation information for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        public AllocatedRegister GetRegisterAllocation(int virtualRegister)
+        {
+            AllocatedRegister allocatedRegister;
+            if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
+            {
+                return allocatedRegister;
+            }
+
+            throw new InvalidOperationException("The given virtual register is not valid.");
         }
     }
 

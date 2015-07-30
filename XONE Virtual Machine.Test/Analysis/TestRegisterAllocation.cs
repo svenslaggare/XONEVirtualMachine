@@ -39,7 +39,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 var virtualInstructions = VirtualRegisters.Create(func.Instructions);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
-                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualRegisterInstruction>(virtualInstructions)));
+                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);
@@ -76,7 +76,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 var virtualInstructions = VirtualRegisters.Create(func.Instructions);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
-                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualRegisterInstruction>(virtualInstructions)));
+                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
@@ -117,7 +117,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 var virtualInstructions = VirtualRegisters.Create(func.Instructions);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
-                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualRegisterInstruction>(virtualInstructions)));
+                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);

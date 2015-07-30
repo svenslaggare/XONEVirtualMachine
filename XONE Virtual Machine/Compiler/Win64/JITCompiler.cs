@@ -36,7 +36,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         public IntPtr Compile(Function function)
         {
             //Compile the function
-            var compilationData = new CompilationData(function, new OperandStack(function));
+            var compilationData = new CompilationData(function);
             this.compiledFunctions.Add(compilationData);
             this.codeGen.CompileFunction(compilationData);
 
