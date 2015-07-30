@@ -54,7 +54,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Analysis\TestControlFlowGraphs.cs" />
-    <Compile Include="Analysis\TestProgramGenerator.cs" />
+    <Compile Include="TestProgramGenerator.cs" />
     <Compile Include="Analysis\TestVirtualRegisters.cs" />
     <Compile Include="Analysis\TestLivenessAnalysis.cs" />
     <Compile Include="Analysis\TestRegisterAllocation.cs" />
@@ -66,6 +66,7 @@
     <Compile Include="Programs\TestFunctions.cs" />
     <Compile Include="Programs\TestBranches.cs" />
     <Compile Include="Analysis\TestBasicBlocks.cs" />
+    <Compile Include="Programs\TestOptimized.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

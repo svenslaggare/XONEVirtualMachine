@@ -36,7 +36,7 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
-        /// Creates a single function assembly
+        /// Creates an assembly that just has one function
         /// </summary>
         /// <param name="function">The function</param>
         public static Assembly SingleFunction(Function function)

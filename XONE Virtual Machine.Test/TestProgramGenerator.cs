@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using XONEVirtualMachine;
 using XONEVirtualMachine.Core;
 
-namespace XONE_Virtual_Machine.Test.Analysis
+namespace XONE_Virtual_Machine.Test
 {
     /// <summary>
     /// Generates test programs
@@ -27,7 +27,53 @@ namespace XONE_Virtual_Machine.Test.Analysis
             instructions.Add(new Instruction(OpCodes.Ret));
 
             return new Function(
-                new FunctionDefinition("test", new List<VMType>() { }, intType),
+                new FunctionDefinition("main", new List<VMType>() { }, intType),
+                instructions,
+                new List<VMType>());
+        }
+
+        /// <summary>
+        /// A simple function without any control flow
+        /// </summary>
+        public static Function Simple2(Win64Container container)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 4));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 6));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(
+                new FunctionDefinition("main", new List<VMType>() { }, intType),
+                instructions,
+                new List<VMType>());
+        }
+
+        /// <summary>
+        /// A simple function without any control flow
+        /// </summary>
+        public static Function Simple3(Win64Container container)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 3));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 4));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 5));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(
+                new FunctionDefinition("main", new List<VMType>() { }, intType),
                 instructions,
                 new List<VMType>());
         }
@@ -55,7 +101,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
             instructions.Add(new Instruction(OpCodes.Ret));
 
             return new Function(
-                new FunctionDefinition("test", new List<VMType>() { }, intType),
+                new FunctionDefinition("main", new List<VMType>() { }, intType),
                 instructions,
                 new List<VMType>() { intType });
         }
@@ -75,7 +121,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
             instructions.Add(new Instruction(OpCodes.Ret));
 
             return new Function(
-                new FunctionDefinition("test", new List<VMType>() { }, intType),
+                new FunctionDefinition("main", new List<VMType>() { }, intType),
                 instructions,
                 new List<VMType>() { intType });
         }
@@ -127,7 +173,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
             instructions.Add(new Instruction(OpCodes.Ret));
 
             return new Function(
-                new FunctionDefinition("test", new List<VMType>(), intType),
+                new FunctionDefinition("main", new List<VMType>(), intType),
                 instructions,
                 new List<VMType>() { intType, intType });
         }
