@@ -70,9 +70,20 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             //Calculate the size of the stack aligned to 16 bytes
             var def = function.Definition;
-            int neededStackSize =
-                (def.Parameters.Count + function.Locals.Count + compilationData.Function.OperandStackSize)
-                * Assembler.RegisterSize;
+            int neededStackSize = 0;
+
+            if (compilationData.Function.Optimize)
+            {
+                neededStackSize = 
+                    Assembler.RegisterSize
+                    * (def.Parameters.Count + compilationData.RegisterAllocation.NumSpilledRegisters);
+            }
+            else
+            {
+                neededStackSize =
+                    (def.Parameters.Count + function.Locals.Count + compilationData.Function.OperandStackSize)
+                    * Assembler.RegisterSize;
+            }
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
 
@@ -134,7 +145,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             foreach (var localRegister in compilationData.LocalVirtualRegisters)
             {
-                var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(localRegister));
+                var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(localRegister) ?? 0);
 
                 if (localReg.IsBase)
                 {
@@ -593,12 +604,12 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             Func<NoneIntRegister> GetAssignRegister = () =>
             {
-                return GetRegister(registerAllocation.GetRegister(virtualInstruction.AssignRegister.Value));
+                return GetRegister(registerAllocation.GetRegister(virtualInstruction.AssignRegister.Value) ?? 0);
             };
 
             Func<int, NoneIntRegister> GetUseRegister = x =>
             {
-                return GetRegister(registerAllocation.GetRegister(virtualInstruction.UsesRegisters[x]));
+                return GetRegister(registerAllocation.GetRegister(virtualInstruction.UsesRegisters[x]) ?? 0);
             };
 
             switch (instruction.OpCode)

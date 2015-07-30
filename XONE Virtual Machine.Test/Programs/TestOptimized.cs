@@ -72,5 +72,21 @@ namespace XONE_Virtual_Machine.Test.Programs
                 Assert.AreEqual(container.Execute(), 4);
             }
         }
+
+        /// <summary>
+        /// Tests a function with a loop
+        /// </summary>
+        [TestMethod]
+        public void TestLoop()
+        {
+            using (var container = new Win64Container())
+            {
+                int count = 100;
+                var func = TestProgramGenerator.LoopCount(container, count);
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(container.Execute(), count);
+            }
+        }
     }
 }

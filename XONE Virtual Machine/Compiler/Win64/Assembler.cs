@@ -525,6 +525,30 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Moves the given integer to memory where the address is in a register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="memoryRegister">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="value">The value</param>
+        public static void MoveIntToMemoryRegWithOffset(IList<byte> codeGenerator, Registers memoryRegister, int offset, int value)
+        {
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0xc7);
+            codeGenerator.Add((byte)(0x80 | (byte)memoryRegister));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+
+            foreach (var component in BitConverter.GetBytes(value))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
         /// Moves the given long (64-bits) to the given register
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>
@@ -736,6 +760,94 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x01);
             codeGenerator.Add((byte)(0xc0 | (byte)destination | (byte)((byte)source << 3)));
+        }
+
+        /// <summary>
+        /// Adds the second register to the memory address which is in the first register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destinationMemoryRegister">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="source">The source register</param>
+        public static void AddRegisterToMemoryRegisterWithOffset(
+            IList<byte> codeGenerator,
+            Registers destinationMemoryRegister, int offset,
+            Registers source)
+        {
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0x01);
+            codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Adds the second register to the memory address which is in the first register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destinationMemoryRegister">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="source">The source register</param>
+        public static void AddRegisterToMemoryRegisterWithOffset(
+            IList<byte> codeGenerator,
+            Registers destinationMemoryRegister, int offset,
+            NumberedRegisters source)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x01);
+            codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Adds the memory to the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void AddMemoryRegisterWithOffsetToRegister(
+            IList<byte> codeGenerator,
+            Registers destination,
+            Registers sourceMemoryRegister, int offset)
+        {
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0x03);
+            codeGenerator.Add((byte)(0x80 | (byte)destination | (byte)sourceMemoryRegister << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Adds the memory to the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void AddMemoryRegisterWithOffsetToRegister(
+            IList<byte> codeGenerator,
+            NumberedRegisters destination,
+            Registers sourceMemoryRegister, int offset)
+        {
+            codeGenerator.Add(0x4c);
+            codeGenerator.Add(0x03);
+            codeGenerator.Add((byte)(0x80 | (byte)destination | (byte)sourceMemoryRegister << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
         }
 
         /// <summary>

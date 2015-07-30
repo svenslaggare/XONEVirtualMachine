@@ -34,7 +34,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
     }
 
-
     /// <summary>
     /// Represents a register allocation
     /// </summary>
@@ -74,10 +73,18 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
 
         /// <summary>
+        /// Returns the number of spilled registers
+        /// </summary>
+        public int NumSpilledRegisters
+        {
+            get { return this.Spilled.Count; }
+        }
+
+        /// <summary>
         /// Returns the register for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public int GetRegister(int virtualRegister)
+        public int? GetRegister(int virtualRegister)
         {
             AllocatedRegister allocatedRegister;
             if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
@@ -85,14 +92,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 return allocatedRegister.HardwareRegister;
             }
 
-            throw new InvalidOperationException("The given virtual register is not valid.");
+            return null;
         }
 
         /// <summary>
         /// Returns the register allocation information for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public AllocatedRegister GetRegisterAllocation(int virtualRegister)
+        public AllocatedRegister? GetRegisterAllocation(int virtualRegister)
         {
             AllocatedRegister allocatedRegister;
             if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
@@ -100,13 +107,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 return allocatedRegister;
             }
 
-            throw new InvalidOperationException("The given virtual register is not valid.");
+            return null;
         }
     }
 
     /// <summary>
-    /// Represents register allocation using the linear-scan algorithm.
+    /// Register allocation using the linear-scan algorithm.
     /// </summary>
+    /// <remarks>See: <see cref="http://web.cs.ucla.edu/~palsberg/course/cs132/linearscan.pdf"/></remarks>
     public static class LinearScanRegisterAllocation
     {
         /// <summary>
@@ -118,7 +126,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
 
         /// <summary>
-        /// Allocates the registers
+        /// Allocates registers
         /// </summary>
         /// <param name="liveIntervals">The live intervals</param>
         /// <param name="numRegisters">The number of registers</param>

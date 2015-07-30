@@ -34,7 +34,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);
 
                 Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
-                Assert.AreEqual(0, registerAllocation.Spilled.Count);
+                Assert.AreEqual(0, registerAllocation.NumSpilledRegisters);
             }
         }
 
@@ -58,7 +58,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
 
                 Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
-                Assert.AreEqual(1, registerAllocation.Spilled.Count);
+                Assert.AreEqual(1, registerAllocation.NumSpilledRegisters);
             }
         }
 
@@ -82,7 +82,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals);
 
                 Assert.AreEqual(2, registerAllocation.NumAllocatedRegisters);
-                Assert.AreEqual(0, registerAllocation.Spilled.Count);
+                Assert.AreEqual(0, registerAllocation.NumSpilledRegisters);
             }
         }
 
@@ -106,7 +106,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
 
                 Assert.AreEqual(3, registerAllocation.NumAllocatedRegisters);
-                Assert.AreEqual(0, registerAllocation.Spilled.Count);
+                Assert.AreEqual(0, registerAllocation.NumSpilledRegisters);
 
                 Assert.AreEqual(0, registerAllocation.GetRegister(0));
                 Assert.AreEqual(1, registerAllocation.GetRegister(1));

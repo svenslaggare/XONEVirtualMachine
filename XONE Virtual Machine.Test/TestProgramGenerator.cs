@@ -177,5 +177,39 @@ namespace XONE_Virtual_Machine.Test
                 instructions,
                 new List<VMType>() { intType, intType });
         }
+
+        /// <summary>
+        /// Creates a function that counts up to the given amount
+        /// </summary>
+        public static Function LoopCount(Win64Container container, int count)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>() { }, intType);
+
+            var instructions = new List<Instruction>();
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, count));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 1));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.BranchGreaterThan, 2));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { intType, intType });
+        }
     }
 }
