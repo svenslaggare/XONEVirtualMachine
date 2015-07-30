@@ -122,19 +122,19 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public IReadOnlyList<TBlock> Vertices { get; }
 
         /// <summary>
-        /// The edges
+        /// The neighbor lists
         /// </summary>
-        public IReadOnlyDictionary<TBlock, ISet<TEdge>> Edges { get; }
+        public IReadOnlyDictionary<TBlock, ISet<TEdge>> NeighborLists { get; }
 
         /// <summary>
         /// Creates a new control flow graph
         /// </summary>
         /// <param name="vertices">The vertices</param>
-        /// <param name="edges">The edges</param>
-        protected ControlFlowGraph(IList<TBlock> vertices, IDictionary<TBlock, ISet<TEdge>> edges)
+        /// <param name="neighborLists">The neighbor lists</param>
+        protected ControlFlowGraph(IList<TBlock> vertices, IDictionary<TBlock, ISet<TEdge>> neighborLists)
         {
             this.Vertices = new ReadOnlyCollection<TBlock>(vertices);
-            this.Edges = new ReadOnlyDictionary<TBlock, ISet<TEdge>>(edges);
+            this.NeighborLists = new ReadOnlyDictionary<TBlock, ISet<TEdge>>(neighborLists);
         }
 
         /// <summary>

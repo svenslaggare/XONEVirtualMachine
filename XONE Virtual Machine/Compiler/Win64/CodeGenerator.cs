@@ -735,34 +735,6 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.LoadLocal:
                 case OpCodes.StoreLocal:
                     {
-                        ////Load rax with the locals offset
-                        //int localOffset =
-                        //    (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
-                        //    * -Assembler.RegisterSize;
-
-                        //if (instruction.OpCode == OpCodes.LoadLocal)
-                        //{
-                        //    var storeReg = GetAssignRegister().BaseRegister;
-
-                        //    //Load register with the local
-                        //    Assembler.MoveMemoryRegisterWithOffsetToRegister(
-                        //        generatedCode,
-                        //        storeReg,
-                        //        Registers.BP,
-                        //        localOffset); //mov <reg>, [rbp+<offset>]
-                        //}
-                        //else
-                        //{
-                        //    var opReg = GetUseRegister(0).BaseRegister;
-
-                        //    //Store the operand at the given local
-                        //    Assembler.MoveRegisterToMemoryRegisterWithOffset(
-                        //        generatedCode,
-                        //        Registers.BP,
-                        //        localOffset,
-                        //        opReg); //mov [rbp+<local offset>], <reg>
-                        //}
-
                         if (instruction.OpCode == OpCodes.LoadLocal)
                         {
                             var valueReg = GetAssignRegister();
@@ -815,13 +787,13 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         //Compare
                         GenerateTwoRegistersInstruction(
-                                generatedCode,
-                                op1Reg,
-                                op2Reg,
-                                Assembler.CompareRegisterToRegister,
-                                Assembler.CompareRegisterToRegister,
-                                Assembler.CompareRegisterToRegister,
-                                Assembler.CompareRegisterToRegister);
+                            generatedCode,
+                            op1Reg,
+                            op2Reg,
+                            Assembler.CompareRegisterToRegister,
+                            Assembler.CompareRegisterToRegister,
+                            Assembler.CompareRegisterToRegister,
+                            Assembler.CompareRegisterToRegister);
 
                         switch (instruction.OpCode)
                         {

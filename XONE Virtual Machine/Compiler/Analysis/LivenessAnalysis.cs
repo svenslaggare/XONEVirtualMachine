@@ -163,7 +163,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         {
             var backflowEdges = new Dictionary<VirtualBasicBlock, ISet<VirtualBasicBlock>>();
 
-            foreach (var edgeList in controlFlowGraph.Edges.Values)
+            foreach (var edgeList in controlFlowGraph.NeighborLists.Values)
             {
                 foreach (var edge in edgeList)
                 {

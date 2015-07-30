@@ -243,9 +243,9 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Creates a new control flow graph
         /// </summary>
         /// <param name="vertices">The vertices</param>
-        /// <param name="edges">The edges</param>
-        private VirtualControlFlowGraph(IList<VirtualBasicBlock> vertices, IDictionary<VirtualBasicBlock, ISet<VirtualControlFlowEdge>> edges)
-            : base(vertices, edges)
+        /// <param name="neighborLists">The neighbor lists</param>
+        private VirtualControlFlowGraph(IList<VirtualBasicBlock> vertices, IDictionary<VirtualBasicBlock, ISet<VirtualControlFlowEdge>> neighborLists)
+            : base(vertices, neighborLists)
         {
 
         }

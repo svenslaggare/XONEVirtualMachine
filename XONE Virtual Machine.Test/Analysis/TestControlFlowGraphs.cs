@@ -29,23 +29,23 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var basicBlocks = BasicBlock.CreateBasicBlocks(func);
                 var controlGraph = ControlFlowGraph.FromBasicBlocks(basicBlocks);
 
-                Assert.AreEqual(3, controlGraph.Edges.Count);
+                Assert.AreEqual(3, controlGraph.NeighborLists.Count);
 
-                Assert.AreEqual(2, controlGraph.Edges[basicBlocks[0]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[0]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(2, controlGraph.NeighborLists[basicBlocks[0]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[0]].SetEquals(new HashSet<ControlFlowEdge>()
                 {
                     new ControlFlowEdge(basicBlocks[0], basicBlocks[1]),
                     new ControlFlowEdge(basicBlocks[0], basicBlocks[2]),
                 }));
 
-                Assert.AreEqual(1, controlGraph.Edges[basicBlocks[1]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[1]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(1, controlGraph.NeighborLists[basicBlocks[1]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[1]].SetEquals(new HashSet<ControlFlowEdge>()
                 {
                     new ControlFlowEdge(basicBlocks[1], basicBlocks[3])
                 }));
 
-                Assert.AreEqual(1, controlGraph.Edges[basicBlocks[2]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[2]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(1, controlGraph.NeighborLists[basicBlocks[2]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[2]].SetEquals(new HashSet<ControlFlowEdge>()
                 {
                     new ControlFlowEdge(basicBlocks[2], basicBlocks[3])
                 }));
@@ -67,23 +67,23 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var basicBlocks = BasicBlock.CreateBasicBlocks(func);
                 var controlGraph = ControlFlowGraph.FromBasicBlocks(basicBlocks);
 
-                Assert.AreEqual(3, controlGraph.Edges.Count);
+                Assert.AreEqual(3, controlGraph.NeighborLists.Count);
 
-                Assert.AreEqual(2, controlGraph.Edges[basicBlocks[0]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[0]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(2, controlGraph.NeighborLists[basicBlocks[0]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[0]].SetEquals(new HashSet<ControlFlowEdge>()
                 {
                     new ControlFlowEdge(basicBlocks[0], basicBlocks[1]),
                     new ControlFlowEdge(basicBlocks[0], basicBlocks[2]),
                 }));
 
-                Assert.AreEqual(1, controlGraph.Edges[basicBlocks[1]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[1]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(1, controlGraph.NeighborLists[basicBlocks[1]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[1]].SetEquals(new HashSet<ControlFlowEdge>()
                     {
                         new ControlFlowEdge(basicBlocks[1], basicBlocks[3])
                     }));
 
-                Assert.AreEqual(1, controlGraph.Edges[basicBlocks[2]].Count);
-                Assert.AreEqual(true, controlGraph.Edges[basicBlocks[2]].SetEquals(new HashSet<ControlFlowEdge>()
+                Assert.AreEqual(1, controlGraph.NeighborLists[basicBlocks[2]].Count);
+                Assert.AreEqual(true, controlGraph.NeighborLists[basicBlocks[2]].SetEquals(new HashSet<ControlFlowEdge>()
                     {
                         new ControlFlowEdge(basicBlocks[2], basicBlocks[3])
                     }));
