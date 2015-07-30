@@ -108,5 +108,28 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 instructions,
                 new List<VMType>() { intType });
         }
+
+        /// <summary>
+        /// Function with locals with none overlapping life time
+        /// </summary>
+        public static Function Locals(Win64Container container)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 4));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 1));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(
+                new FunctionDefinition("test", new List<VMType>(), intType),
+                instructions,
+                new List<VMType>() { intType, intType });
+        }
     }
 }

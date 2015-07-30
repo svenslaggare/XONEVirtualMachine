@@ -122,7 +122,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
             var allocatedRegisteres = new Dictionary<LiveInterval, int>();
             var spilledRegisters = new List<LiveInterval>();
 
-            var freeRegisters = new HashSet<int>(Enumerable.Range(0, numRegisters));
+            var freeRegisters = new SortedSet<int>(Enumerable.Range(0, numRegisters));
             var active = new List<LiveInterval>();
             liveIntervals = liveIntervals.OrderBy(x => x.Start).ToList();
 
@@ -160,15 +160,22 @@ namespace XONEVirtualMachine.Compiler.Analysis
             ISet<int> freeRegisters,
             LiveInterval currentInterval)
         {
+            var toRemove = new List<LiveInterval>();
+
             foreach (var interval in active)
             {
                 if (interval.End >= currentInterval.Start)
                 {
-                    return;
+                    break;
                 }
 
-                active.Remove(interval);
+                toRemove.Add(interval);
                 freeRegisters.Add(allocatedRegisteres[interval]);
+            }
+
+            foreach (var interval in toRemove)
+            {
+                active.Remove(interval);
             }
         }
 

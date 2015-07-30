@@ -126,5 +126,33 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 Assert.AreEqual(0, registerAllocation.Spilled.Count);
             }
         }
+
+        /// <summary>
+        /// Tests a locals function
+        /// </summary>
+        [TestMethod]
+        public void TestLocals()
+        {
+            using (var container = new Win64Container())
+            {
+                var func = TestProgramGenerator.Locals(container);
+
+                container.VirtualMachine.Verifier.VerifiyFunction(func);
+
+                var virtualInstructions = VirtualRegisters.Create(func.Instructions);
+                var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
+                    VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
+
+                var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
+                var registerAllocation = LinearScanRegisterAllocation.Allocate(livenessIntervals, 2);
+
+                Assert.AreEqual(3, registerAllocation.Allocated.Count);
+                Assert.AreEqual(0, registerAllocation.Spilled.Count);
+
+                Assert.AreEqual(0, registerAllocation.GetRegister(0));
+                Assert.AreEqual(1, registerAllocation.GetRegister(1));
+                Assert.AreEqual(1, registerAllocation.GetRegister(1));
+            }
+        }
     }
 }

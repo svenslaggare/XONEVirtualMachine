@@ -77,9 +77,9 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
 
         /// <summary>
-        /// Represents a use site
+        /// Represents a usage site
         /// </summary>
-        private class UseSite
+        private class UsageSite
         {
             /// <summary>
             /// The block
@@ -93,28 +93,49 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
 
         /// <summary>
-        /// Returns the use sites from the registers in the given control flow graph
+        /// Returns the virtual register usage from the registers in the given control flow graph
         /// </summary>
         /// <param name="controlFlowGraph">The control flow graph</param>
-        private static IDictionary<int, IList<UseSite>> GetUseSites(VirtualControlFlowGraph controlFlowGraph)
+        /// <param name="useSites">The use sites</param>
+        /// <param name="assignSites">The assign sites</param>
+        private static void GetRegisterUsage(VirtualControlFlowGraph controlFlowGraph,
+            out IDictionary<int, IList<UsageSite>> useSites, out IDictionary<int, IList<UsageSite>> assignSites)
         {
-            var useSites = new Dictionary<int, IList<UseSite>>();
+            useSites = new Dictionary<int, IList<UsageSite>>();
+            assignSites = new Dictionary<int, IList<UsageSite>>();
 
             foreach (var block in controlFlowGraph.Vertices)
             {
                 int offset = 0;
                 foreach (var instruction in block.Instructions)
                 {
+                    if (instruction.AssignRegister != null)
+                    {
+                        int register = instruction.AssignRegister.Value;
+                        IList<UsageSite> assigns;
+                        if (!useSites.TryGetValue(register, out assigns))
+                        {
+                            assigns = new List<UsageSite>();
+                            useSites.Add(register, assigns);
+                        }
+
+                        assigns.Add(new UsageSite()
+                        {
+                            Block = block,
+                            Offset = offset
+                        });
+                    }
+
                     foreach (var register in instruction.UsesRegisters)
                     {
-                        IList<UseSite> uses;
+                        IList<UsageSite> uses;
                         if (!useSites.TryGetValue(register, out uses))
                         {
-                            uses = new List<UseSite>();
+                            uses = new List<UsageSite>();
                             useSites.Add(register, uses);
                         }
 
-                        uses.Add(new UseSite()
+                        uses.Add(new UsageSite()
                         {
                             Block = block,
                             Offset = offset
@@ -124,8 +145,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     offset++;
                 }
             }
-
-            return useSites;
         }
 
         /// <summary>
@@ -233,7 +252,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="register">The register</param>
         /// <param name="useSites">The use sites</param>
         /// <param name="aliveAt">The instructions which the register is alive</param>
-        private static void ComputeLiveness(BackflowGraph backflowGraph, int register, IList<UseSite> useSites, ISet<int> aliveAt)
+        private static void ComputeLiveness(BackflowGraph backflowGraph, int register, IList<UsageSite> useSites, ISet<int> aliveAt)
         {
             foreach (var useSite in useSites)
             {
@@ -274,17 +293,35 @@ namespace XONEVirtualMachine.Compiler.Analysis
         {
             var liveIntervals = new List<LiveInterval>();
             int numRegisters = NumVirtualRegister(controlFlowGraph);
-            var useSites = GetUseSites(controlFlowGraph);
+
+            //Get the register usage
+            IDictionary<int, IList<UsageSite>> useSites;
+            IDictionary<int, IList<UsageSite>> assignSites;
+            GetRegisterUsage(controlFlowGraph, out useSites, out assignSites);
+
+            //Get the backflow fraph
             var backflowGraph = GetBackflow(controlFlowGraph);
 
             for (int reg = 0; reg < numRegisters; reg++)
             {
-                IList<UseSite> registerUseSites;
+                IList<UsageSite> registerUseSites;
 
                 if (useSites.TryGetValue(reg, out registerUseSites))
                 {
                     var aliveAt = new HashSet<int>();
                     ComputeLiveness(backflowGraph, reg, registerUseSites, aliveAt);
+                    liveIntervals.Add(GetLiveInterval(reg, aliveAt));
+                }
+                else
+                {
+                    //This mean that the register is not used. Atm, we do not remove write-only virtual registers.
+                    //So we need to compute the liveness information, else we get an exception in code gen.
+                    var aliveAt = new HashSet<int>();
+                    foreach (var assignSite in assignSites[reg])
+                    {
+                        aliveAt.ElementAt(assignSite.Block.StartOffset + assignSite.Offset);
+                    }
+
                     liveIntervals.Add(GetLiveInterval(reg, aliveAt));
                 }
             }
