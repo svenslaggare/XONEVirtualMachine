@@ -33,6 +33,11 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public Verifier Verifier { get; }
 
+        /// <summary>
+        /// The settings for the VM
+        /// </summary>
+        public IDictionary<string, object> Settings { get; } = new Dictionary<string, object>();
+
         private readonly IList<Assembly> loadedAssemblies = new List<Assembly>();
 
         /// <summary>

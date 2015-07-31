@@ -59,8 +59,9 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// Creates new compilation data
         /// </summary>
+        /// <param name="virtualMachine">The virtual macine</param>
         /// <param name="function">The function</param>
-        public CompilationData(Function function)
+        public CompilationData(VirtualMachine virtualMachine, Function function)
         {
             this.Function = function;
             this.OperandStack = new OperandStack(function);
@@ -73,9 +74,11 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 this.LocalVirtualRegisters = new ReadOnlyCollection<int>(localRegs);
 
+                int numRegs = virtualMachine.Settings.GetSetting<int>("NumAllocatedRegisters") ?? 7;
+
                 this.RegisterAllocation = LinearScanRegisterAllocation.Allocate(
                     LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
-                        VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))));
+                        VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))), numRegs);
             }
         }
     }

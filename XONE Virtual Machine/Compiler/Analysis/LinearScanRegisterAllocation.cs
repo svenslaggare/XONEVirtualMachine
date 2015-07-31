@@ -175,6 +175,17 @@ namespace XONEVirtualMachine.Compiler.Analysis
             var allocatedRegisteres = new Dictionary<LiveInterval, int>();
             var spilledRegisters = new List<LiveInterval>();
 
+            //If we do not got any registers, spill all.
+            if (numRegisters == 0)
+            {
+                foreach (var interval in liveIntervals)
+                {
+                    spilledRegisters.Add(interval);
+                }
+
+                return new RegisterAllocation(allocatedRegisteres, spilledRegisters);
+            }
+
             var freeRegisters = new SortedSet<int>(Enumerable.Range(0, numRegisters));
             var active = new List<LiveInterval>();
             liveIntervals = liveIntervals.OrderBy(x => x.Start).ToList();

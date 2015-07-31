@@ -90,6 +90,7 @@
     <Compile Include="Core\ListHelpers.cs" />
     <Compile Include="Compiler\NativeHelpers.cs" />
     <Compile Include="Core\NativeLibrary.cs" />
+    <Compile Include="Core\SettingsHelpers.cs" />
     <Compile Include="Core\Verifier.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

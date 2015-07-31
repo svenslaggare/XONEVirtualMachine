@@ -459,17 +459,59 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             var func = compilationData.Function;
 
+            if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
+            {
+                var spillReg = this.GetSpillRegister();
+                GenerateTwoRegistersInstruction(
+                    func.GeneratedCode,
+                    spillReg,
+                    spillReg,
+                    (gen, x, y) => Assembler.XorRegisterToRegister(gen, x, y),
+                    Assembler.XorRegisterToRegister,
+                    null,
+                    null);
+            }
+
             foreach (var localRegister in compilationData.LocalVirtualRegisters)
             {
-                var localReg = GetRegister(compilationData.RegisterAllocation.GetRegister(localRegister) ?? 0);
+                var reg = compilationData.RegisterAllocation.GetRegister(localRegister);
 
-                if (localReg.IsBase)
+                if (reg.HasValue)
                 {
-                    Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.BaseRegister, localReg.BaseRegister);
+                    var localReg = GetRegister(reg.Value);
+
+                    GenerateTwoRegistersInstruction(
+                        func.GeneratedCode,
+                        localReg,
+                        localReg,
+                        (gen, x, y) => Assembler.XorRegisterToRegister(gen, x, y),
+                        Assembler.XorRegisterToRegister,
+                        null,
+                        null);
                 }
                 else
                 {
-                    Assembler.XorRegisterToRegister(func.GeneratedCode, localReg.ExtendedRegister, localReg.ExtendedRegister);
+                    var spillReg = this.GetSpillRegister();
+                    int stackOffset = 
+                        -Assembler.RegisterSize
+                        * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
+
+                    if (spillReg.IsBase)
+                    {
+                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                            func.GeneratedCode,
+                            Registers.BP,
+                            stackOffset,
+                            spillReg.BaseRegister);
+                    }
+                    else
+                    {
+                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                            func.GeneratedCode,
+                            Registers.BP,
+                            stackOffset,
+                            spillReg.ExtendedRegister);
+                    }
                 }
             }
         }

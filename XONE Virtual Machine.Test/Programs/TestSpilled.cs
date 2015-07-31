@@ -1,18 +1,16 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using XONEVirtualMachine;
-using XONEVirtualMachine.Compiler.Analysis;
 using XONEVirtualMachine.Core;
 
 namespace XONE_Virtual_Machine.Test.Programs
 {
     /// <summary>
-    /// Tests optimized functions
+    /// Tests spilled memory
     /// </summary>
     [TestClass]
-    public class TestOptimized
+    public class TestSpilled
     {
         /// <summary>
         /// Tests a simple function
@@ -22,6 +20,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 var func = TestProgramGenerator.Simple(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
@@ -37,6 +36,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 var func = TestProgramGenerator.Simple2(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
@@ -52,6 +52,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 var func = TestProgramGenerator.Simple3(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
@@ -67,6 +68,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 var func = TestProgramGenerator.Locals(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
@@ -82,6 +84,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 int count = 100;
                 var func = TestProgramGenerator.LoopCount(container, count);
                 func.Optimize = true;
@@ -98,6 +101,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 int count = 100;
                 var func = TestProgramGenerator.SumNoneLoop(container, count);
                 func.Optimize = true;
@@ -114,6 +118,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 int count = 100;
                 var func = TestProgramGenerator.SumNoneLoopLocal(container, count);
                 func.Optimize = true;
@@ -130,6 +135,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         {
             using (var container = new Win64Container())
             {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
                 int count = 10;
                 int product = Enumerable.Aggregate(Enumerable.Range(1, count), 1, (total, current) => total * current);
                 var func = TestProgramGenerator.ProductNoneLoop(container, count);
