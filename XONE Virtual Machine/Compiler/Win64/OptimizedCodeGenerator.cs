@@ -34,8 +34,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="callRegister">The register where the address will be stored in</param>
         private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Registers callRegister = Registers.AX)
         {
-            Assembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
-            Assembler.CallInRegister(generatedCode, callRegister);
+            RawAssembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
+            RawAssembler.CallInRegister(generatedCode, callRegister);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             public bool IsBase { get; set; }
             public Registers BaseRegister { get; set; }
-            public NumberedRegisters ExtendedRegister { get; set; }
+            public ExtendedRegisters ExtendedRegister { get; set; }
 
             public static bool operator ==(NoneIntRegister lhs, NoneIntRegister rhs)
             {
@@ -125,7 +125,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         private NoneIntRegister GetSpillRegister()
         {
-            return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R12 };
+            return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R12 };
         }
 
         /// <summary>
@@ -148,19 +148,19 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
             else if (register == 3)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R8 };
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R8 };
             }
             else if (register == 4)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R9 };
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R9 };
             }
             else if (register == 5)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R10 };
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R10 };
             }
             else if (register == 6)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = NumberedRegisters.R11 };
+                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R11 };
             }
 
             throw new InvalidOperationException("The given register is not valid.");
@@ -173,8 +173,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1">The first operand</param>
         /// <param name="op2">The second operand</param>
         private void GenerateTwoRegistersInstruction(IList<byte> generatedCode, NoneIntRegister op1, NoneIntRegister op2,
-            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, NumberedRegisters, NumberedRegisters> inst2,
-            Action<IList<byte>, Registers, NumberedRegisters> inst3, Action<IList<byte>, NumberedRegisters, Registers> inst4)
+            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters> inst2,
+            Action<IList<byte>, Registers, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, Registers> inst4)
         {
             if (op1.IsBase && op2.IsBase)
             {
@@ -210,10 +210,10 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1Register">The first operand</param>
         /// <param name="op2Register">The second operand</param>
         private void GenerateTwoRegistersInstruction(CompilationData compilationData, int op1Register, int op2Register,
-            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, NumberedRegisters, NumberedRegisters> inst2,
-            Action<IList<byte>, Registers, NumberedRegisters> inst3, Action<IList<byte>, NumberedRegisters, Registers> inst4,
-            Action<IList<byte>, Registers, Registers, int> inst5, Action<IList<byte>, NumberedRegisters, Registers, int> inst6,
-            Action<IList<byte>, Registers, int, Registers> inst7, Action<IList<byte>, Registers, int, NumberedRegisters> inst8,
+            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters> inst2,
+            Action<IList<byte>, Registers, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, Registers> inst4,
+            Action<IList<byte>, Registers, Registers, int> inst5, Action<IList<byte>, ExtendedRegisters, Registers, int> inst6,
+            Action<IList<byte>, Registers, int, Registers> inst7, Action<IList<byte>, Registers, int, ExtendedRegisters> inst8,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
@@ -247,7 +247,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             else if (!op1Stack.HasValue && op2Stack.HasValue)
             {
                 var op1Reg = this.GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
-                var op2StackOffset = -Assembler.RegisterSize * (1 + op2Stack.Value);
+                var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
 
                 if (op1Reg.IsBase)
                 {
@@ -260,7 +260,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
             else if (op1Stack.HasValue && !op2Stack.HasValue)
             {
-                var op1StackOffset = -Assembler.RegisterSize * (1 + op1Stack.Value);
+                var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
                 var op2Reg = this.GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
 
                 if (op2Reg.IsBase)
@@ -274,8 +274,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
             else
             {
-                var op1StackOffset = -Assembler.RegisterSize * (1 + op1Stack.Value);
-                var op2StackOffset = -Assembler.RegisterSize * (1 + op2Stack.Value);
+                var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
+                var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
 
                 var spillReg = this.GetSpillRegister();
 
@@ -283,7 +283,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
                     {
-                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                             generatedCode,
                             spillReg.BaseRegister,
                             Registers.BP,
@@ -293,7 +293,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     else
                     {
-                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                             generatedCode,
                             spillReg.BaseRegister,
                             Registers.BP,
@@ -301,7 +301,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         inst5(generatedCode, spillReg.BaseRegister, Registers.BP, op2StackOffset);
 
-                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                             generatedCode,
                             Registers.BP,
                             op1StackOffset,
@@ -312,7 +312,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
                     {
-                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                             generatedCode,
                             spillReg.ExtendedRegister,
                             Registers.BP,
@@ -322,7 +322,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     else
                     {
-                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                             generatedCode,
                             spillReg.ExtendedRegister,
                             Registers.BP,
@@ -330,7 +330,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         inst6(generatedCode, spillReg.ExtendedRegister, Registers.BP, op2StackOffset);
 
-                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                             generatedCode,
                             Registers.BP,
                             op1StackOffset,
@@ -346,7 +346,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="generatedCode">The generated code</param>
         /// <param name="op">The operand</param>
         private void GenerateOneRegisterInstruction(IList<byte> generatedCode, NoneIntRegister op,
-            Action<IList<byte>, Registers> inst1, Action<IList<byte>, NumberedRegisters> inst2)
+            Action<IList<byte>, Registers> inst1, Action<IList<byte>, ExtendedRegisters> inst2)
         {
             if (op.IsBase)
             {
@@ -365,7 +365,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op">The operand</param>
         /// <param name="value">The value</param>
         private void GenerateOneRegisterWithValueInstruction(IList<byte> generatedCode, NoneIntRegister op, int value,
-            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, NumberedRegisters, int> inst2)
+            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, int> inst2)
         {
             if (op.IsBase)
             {
@@ -384,7 +384,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="opRegister">The operand</param>
         /// <param name="value">The value</param>
         private void GenerateOneRegisterWithValueInstruction(CompilationData compilationData, int opRegister, int value,
-            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, NumberedRegisters, int> inst2,
+            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, int> inst2,
             Action<IList<byte>, Registers, int, int> inst3)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
@@ -407,7 +407,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
             else
             {
-                var opStackOffset = -Assembler.RegisterSize * (1 + opStack.Value);
+                var opStackOffset = -RawAssembler.RegisterSize * (1 + opStack.Value);
                 inst3(generatedCode, Registers.BP, opStackOffset, value);
             }
         }
@@ -423,17 +423,17 @@ namespace XONEVirtualMachine.Compiler.Win64
             //Calculate the size of the stack aligned to 16 bytes
             var def = function.Definition;
             int neededStackSize =
-                Assembler.RegisterSize
+                RawAssembler.RegisterSize
                 * (def.Parameters.Count + compilationData.RegisterAllocation.NumSpilledRegisters);
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
 
             //Save the base pointer
-            Assembler.PushRegister(function.GeneratedCode, Registers.BP); //push rbp
-            Assembler.MoveRegisterToRegister(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
+            RawAssembler.PushRegister(function.GeneratedCode, Registers.BP); //push rbp
+            RawAssembler.MoveRegisterToRegister(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
 
             //Make room for the variables on the stack
-            Assembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
+            RawAssembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
 
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
@@ -443,8 +443,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                 this.GenerateOneRegisterInstruction(
                     function.GeneratedCode,
                     this.GetSpillRegister(),
-                    Assembler.PushRegister,
-                    Assembler.PushRegister);
+                    RawAssembler.PushRegister,
+                    RawAssembler.PushRegister);
             }
 
             //Zero locals
@@ -466,8 +466,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                     func.GeneratedCode,
                     spillReg,
                     spillReg,
-                    (gen, x, y) => Assembler.XorRegisterToRegister(gen, x, y),
-                    Assembler.XorRegisterToRegister,
+                    (gen, x, y) => RawAssembler.XorRegisterToRegister(gen, x, y),
+                    RawAssembler.XorRegisterToRegister,
                     null,
                     null);
             }
@@ -484,8 +484,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                         func.GeneratedCode,
                         localReg,
                         localReg,
-                        (gen, x, y) => Assembler.XorRegisterToRegister(gen, x, y),
-                        Assembler.XorRegisterToRegister,
+                        (gen, x, y) => RawAssembler.XorRegisterToRegister(gen, x, y),
+                        RawAssembler.XorRegisterToRegister,
                         null,
                         null);
                 }
@@ -493,12 +493,12 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     var spillReg = this.GetSpillRegister();
                     int stackOffset = 
-                        -Assembler.RegisterSize
+                        -RawAssembler.RegisterSize
                         * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
 
                     if (spillReg.IsBase)
                     {
-                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                             func.GeneratedCode,
                             Registers.BP,
                             stackOffset,
@@ -506,7 +506,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     else
                     {
-                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                             func.GeneratedCode,
                             Registers.BP,
                             stackOffset,
@@ -529,13 +529,13 @@ namespace XONEVirtualMachine.Compiler.Win64
                 this.GenerateOneRegisterInstruction(
                     generatedCode,
                     this.GetSpillRegister(),
-                    Assembler.PopRegister,
-                    Assembler.PopRegister);
+                    RawAssembler.PopRegister,
+                    RawAssembler.PopRegister);
             }
 
             //Restore the base pointer
-            Assembler.MoveRegisterToRegister(generatedCode, Registers.SP, Registers.BP); //mov rsp, rbp
-            Assembler.PopRegister(generatedCode, Registers.BP); //pop rbp
+            RawAssembler.MoveRegisterToRegister(generatedCode, Registers.SP, Registers.BP); //mov rsp, rbp
+            RawAssembler.PopRegister(generatedCode, Registers.BP); //pop rbp
         }
 
         /// <summary>
@@ -575,9 +575,9 @@ namespace XONEVirtualMachine.Compiler.Win64
                             compilationData,
                             storeReg,
                             instruction.IntValue,
-                            Assembler.MoveIntToRegister,
-                            Assembler.MoveIntToRegister,
-                            Assembler.MoveIntToMemoryRegWithOffset);
+                            RawAssembler.MoveIntToRegister,
+                            RawAssembler.MoveIntToRegister,
+                            RawAssembler.MoveIntToMemoryRegWithOffset);
                     }
                     break;
                 case OpCodes.AddInt:
@@ -596,28 +596,28 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => Assembler.AddRegisterToRegister(gen, x, y),
-                                    Assembler.AddRegisterToRegister,
-                                    Assembler.AddRegisterToRegister,
-                                    Assembler.AddRegisterToRegister,
-                                    Assembler.AddMemoryRegisterWithOffsetToRegister,
-                                    Assembler.AddMemoryRegisterWithOffsetToRegister,
-                                    Assembler.AddRegisterToMemoryRegisterWithOffset,
-                                    Assembler.AddRegisterToMemoryRegisterWithOffset);
+                                    (gen, x, y) => RawAssembler.AddRegisterToRegister(gen, x, y),
+                                    RawAssembler.AddRegisterToRegister,
+                                    RawAssembler.AddRegisterToRegister,
+                                    RawAssembler.AddRegisterToRegister,
+                                    RawAssembler.AddMemoryRegisterWithOffsetToRegister,
+                                    RawAssembler.AddMemoryRegisterWithOffsetToRegister,
+                                    RawAssembler.AddRegisterToMemoryRegisterWithOffset,
+                                    RawAssembler.AddRegisterToMemoryRegisterWithOffset);
                                 break;
                             case OpCodes.SubInt:
                                 GenerateTwoRegistersInstruction(
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => Assembler.SubRegisterFromRegister(gen, x, y),
-                                    Assembler.SubRegisterFromRegister,
-                                    Assembler.SubRegisterFromRegister,
-                                    Assembler.SubRegisterFromRegister,
-                                    Assembler.SubMemoryRegisterWithOffsetFromRegister,
-                                    Assembler.SubMemoryRegisterWithOffsetFromRegister,
-                                    Assembler.SubRegisterFromMemoryRegisterWithOffset,
-                                    Assembler.SubRegisterFromMemoryRegisterWithOffset);
+                                    (gen, x, y) => RawAssembler.SubRegisterFromRegister(gen, x, y),
+                                    RawAssembler.SubRegisterFromRegister,
+                                    RawAssembler.SubRegisterFromRegister,
+                                    RawAssembler.SubRegisterFromRegister,
+                                    RawAssembler.SubMemoryRegisterWithOffsetFromRegister,
+                                    RawAssembler.SubMemoryRegisterWithOffsetFromRegister,
+                                    RawAssembler.SubRegisterFromMemoryRegisterWithOffset,
+                                    RawAssembler.SubRegisterFromMemoryRegisterWithOffset);
                                 break;
                             case OpCodes.MulInt:
                                 Action<IList<byte>, Registers, int, Registers> multRegisterToMemoryRegisterWithOffset = (gen, destMem, offset, src) =>
@@ -626,18 +626,18 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                                     if (spillReg.IsBase)
                                     {
-                                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                                             gen,
                                             spillReg.BaseRegister,
                                             Registers.BP,
                                             offset);
 
-                                        Assembler.MultRegisterToRegister(
+                                        RawAssembler.MultRegisterToRegister(
                                             gen,
                                             spillReg.BaseRegister,
                                             src);
 
-                                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                                             gen,
                                             Registers.BP,
                                             offset,
@@ -645,18 +645,18 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     }
                                     else
                                     {
-                                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                                             gen,
                                             spillReg.ExtendedRegister,
                                             Registers.BP,
                                             offset);
 
-                                        Assembler.MultRegisterToRegister(
+                                        RawAssembler.MultRegisterToRegister(
                                             gen,
                                             spillReg.ExtendedRegister,
                                             src);
 
-                                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                                             gen,
                                             Registers.BP,
                                             offset,
@@ -664,24 +664,24 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     }
                                 };
 
-                                Action<IList<byte>, Registers, int, NumberedRegisters> multRegisterToMemoryRegisterWithOffset2 = (gen, destMem, offset, src) =>
+                                Action<IList<byte>, Registers, int, ExtendedRegisters> multRegisterToMemoryRegisterWithOffset2 = (gen, destMem, offset, src) =>
                                 {
                                     var spillReg = GetSpillRegister();
 
                                     if (spillReg.IsBase)
                                     {
-                                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                                             gen,
                                             spillReg.BaseRegister,
                                             Registers.BP,
                                             offset);
 
-                                        Assembler.MultRegisterToRegister(
+                                        RawAssembler.MultRegisterToRegister(
                                             gen,
                                             spillReg.BaseRegister,
                                             src);
 
-                                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                                             gen,
                                             Registers.BP,
                                             offset,
@@ -689,18 +689,18 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     }
                                     else
                                     {
-                                        Assembler.MoveMemoryRegisterWithIntOffsetToRegister(
+                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
                                             gen,
                                             spillReg.ExtendedRegister,
                                             Registers.BP,
                                             offset);
 
-                                        Assembler.MultRegisterToRegister(
+                                        RawAssembler.MultRegisterToRegister(
                                             gen,
                                             spillReg.ExtendedRegister,
                                             src);
 
-                                        Assembler.MoveRegisterToMemoryRegisterWithIntOffset(
+                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
                                             gen,
                                             Registers.BP,
                                             offset,
@@ -712,12 +712,12 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => Assembler.MultRegisterToRegister(gen, x, y),
-                                    Assembler.MultRegisterToRegister,
-                                    Assembler.MultRegisterToRegister,
-                                    Assembler.MultRegisterToRegister,
-                                    Assembler.MultMemoryRegisterWithOffsetToRegister,
-                                    Assembler.MultMemoryRegisterWithOffsetToRegister,
+                                    (gen, x, y) => RawAssembler.MultRegisterToRegister(gen, x, y),
+                                    RawAssembler.MultRegisterToRegister,
+                                    RawAssembler.MultRegisterToRegister,
+                                    RawAssembler.MultRegisterToRegister,
+                                    RawAssembler.MultMemoryRegisterWithOffsetToRegister,
+                                    RawAssembler.MultMemoryRegisterWithOffsetToRegister,
                                     multRegisterToMemoryRegisterWithOffset,
                                     multRegisterToMemoryRegisterWithOffset2,
                                     MemoryRewrite.MemoryOnRight);
@@ -748,14 +748,14 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 storeReg,
                                 op1Reg,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => Assembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                Assembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
+                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
                         }
                     }
                     break;
@@ -767,11 +767,11 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         if (opStack.HasValue)
                         {
-                            Assembler.MoveMemoryRegisterWithOffsetToRegister(
+                            RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                                 generatedCode,
                                 Registers.AX,
                                 Registers.BP,
-                                -Assembler.RegisterSize * (1 + opStack.Value));
+                                -RawAssembler.RegisterSize * (1 + opStack.Value));
                         }
                         else
                         {
@@ -783,10 +783,10 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     generatedCode,
                                     new NoneIntRegister() { IsBase = true, BaseRegister = Registers.AX },
                                     opReg,
-                                    Assembler.MoveRegisterToRegister,
-                                    Assembler.MoveRegisterToRegister,
-                                    Assembler.MoveRegisterToRegister,
-                                    Assembler.MoveRegisterToRegister);
+                                    RawAssembler.MoveRegisterToRegister,
+                                    RawAssembler.MoveRegisterToRegister,
+                                    RawAssembler.MoveRegisterToRegister,
+                                    RawAssembler.MoveRegisterToRegister);
                             }
                         }
 
@@ -794,7 +794,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         this.CreateEpilog(compilationData);
 
                         //Make the return
-                        Assembler.Return(generatedCode);
+                        RawAssembler.Return(generatedCode);
                     }
                     break;
                 case OpCodes.LoadLocal:
@@ -809,14 +809,14 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 valueReg,
                                 localReg,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => Assembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                Assembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
+                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
                         }
                         else
                         {
@@ -827,19 +827,19 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 localReg,
                                 valueReg,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveRegisterToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                Assembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => Assembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                Assembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveRegisterToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
+                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
+                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
                         }
                     }
                     break;
                 case OpCodes.Branch:
-                    Assembler.Jump(generatedCode, 0); //jmp <target>
+                    RawAssembler.Jump(generatedCode, 0); //jmp <target>
 
                     compilationData.UnresolvedBranches.Add(
                         generatedCode.Count - 5,
@@ -863,61 +863,61 @@ namespace XONEVirtualMachine.Compiler.Win64
                             compilationData,
                             op1Reg,
                             op2Reg,
-                            Assembler.CompareRegisterToRegister,
-                            Assembler.CompareRegisterToRegister,
-                            Assembler.CompareRegisterToRegister,
-                            Assembler.CompareRegisterToRegister,
-                            Assembler.CompareRegisterToMemoryRegisterWithOffset,
-                            Assembler.CompareRegisterToMemoryRegisterWithOffset,
-                            Assembler.CompareMemoryRegisterWithOffsetToRegister,
-                            Assembler.CompareMemoryRegisterWithOffsetToRegister);
+                            RawAssembler.CompareRegisterToRegister,
+                            RawAssembler.CompareRegisterToRegister,
+                            RawAssembler.CompareRegisterToRegister,
+                            RawAssembler.CompareRegisterToRegister,
+                            RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                            RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                            RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
+                            RawAssembler.CompareMemoryRegisterWithOffsetToRegister);
 
                         switch (instruction.OpCode)
                         {
                             case OpCodes.BranchEqual:
-                                Assembler.JumpEqual(generatedCode, 0); // je <target>
+                                RawAssembler.JumpEqual(generatedCode, 0); // je <target>
                                 break;
                             case OpCodes.BranchNotEqual:
-                                Assembler.JumpNotEqual(generatedCode, 0); // jne <target>
+                                RawAssembler.JumpNotEqual(generatedCode, 0); // jne <target>
                                 break;
                             case OpCodes.BranchGreaterThan:
                                 if (unsignedComparison)
                                 {
-                                    Assembler.JumpGreaterThanUnsigned(generatedCode, 0); // jg <target>
+                                    RawAssembler.JumpGreaterThanUnsigned(generatedCode, 0); // jg <target>
                                 }
                                 else
                                 {
-                                    Assembler.JumpGreaterThan(generatedCode, 0); // jg <target>
+                                    RawAssembler.JumpGreaterThan(generatedCode, 0); // jg <target>
                                 }
                                 break;
                             case OpCodes.BranchGreaterOrEqual:
                                 if (unsignedComparison)
                                 {
-                                    Assembler.JumpGreaterThanOrEqualUnsigned(generatedCode, 0); // jge <target>
+                                    RawAssembler.JumpGreaterThanOrEqualUnsigned(generatedCode, 0); // jge <target>
                                 }
                                 else
                                 {
-                                    Assembler.JumpGreaterThanOrEqual(generatedCode, 0); // jge <target>
+                                    RawAssembler.JumpGreaterThanOrEqual(generatedCode, 0); // jge <target>
                                 }
                                 break;
                             case OpCodes.BranchLessThan:
                                 if (unsignedComparison)
                                 {
-                                    Assembler.JumpLessThanUnsigned(generatedCode, 0); // jl <target>
+                                    RawAssembler.JumpLessThanUnsigned(generatedCode, 0); // jl <target>
                                 }
                                 else
                                 {
-                                    Assembler.JumpLessThan(generatedCode, 0); // jl <target>
+                                    RawAssembler.JumpLessThan(generatedCode, 0); // jl <target>
                                 }
                                 break;
                             case OpCodes.BranchLessOrEqual:
                                 if (unsignedComparison)
                                 {
-                                    Assembler.JumpLessThanOrEqualUnsigned(generatedCode, 0); // jle <target>
+                                    RawAssembler.JumpLessThanOrEqualUnsigned(generatedCode, 0); // jle <target>
                                 }
                                 else
                                 {
-                                    Assembler.JumpLessThanOrEqual(generatedCode, 0); // jle <target>
+                                    RawAssembler.JumpLessThanOrEqual(generatedCode, 0); // jle <target>
                                 }
                                 break;
                         }
