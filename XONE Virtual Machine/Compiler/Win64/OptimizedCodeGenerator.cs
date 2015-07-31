@@ -234,8 +234,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             int stackSize = ((neededStackSize + 15) / 16) * 16;
 
             //Save the base pointer
-            RawAssembler.PushRegister(function.GeneratedCode, Registers.BP); //push rbp
-            RawAssembler.MoveRegisterToRegister(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
+            Assembler.Push(function.GeneratedCode, Registers.BP); //push rbp
+            Assembler.Move(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
 
             //Make room for the variables on the stack
             RawAssembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
@@ -301,8 +301,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
 
             //Restore the base pointer
-            RawAssembler.MoveRegisterToRegister(generatedCode, Registers.SP, Registers.BP); //mov rsp, rbp
-            RawAssembler.PopRegister(generatedCode, Registers.BP); //pop rbp
+            Assembler.Move(generatedCode, Registers.SP, Registers.BP);  //mov rsp, rbp
+            Assembler.Pop(generatedCode, Registers.BP); //pop rbp
         }
 
         /// <summary>
