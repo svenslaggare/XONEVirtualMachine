@@ -108,7 +108,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 {
                     case OpCodes.Pop:
                     case OpCodes.Ret:
-                    //case OpCodes.StoreLocal:
                         usesRegisters.Add(UseRegister());
                         break;
                     case OpCodes.AddInt:
@@ -131,7 +130,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
                         assignRegister = AssignRegister();
                         break;
                     case OpCodes.LoadArgument:
-                    //case OpCodes.LoadLocal:
                     case OpCodes.LoadInt:
                     case OpCodes.LoadFloat:
                         assignRegister = AssignRegister();
@@ -159,7 +157,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 i++;
             }
 
-            //After all stack operands has been assigned to virtual registers, assign locals.
+            //After all stack operands has been assigned to virtual registers, assign the locals to virtual registers.
             foreach (var local in localInstructions)
             {
                 var instruction = virtualInstructions[local];

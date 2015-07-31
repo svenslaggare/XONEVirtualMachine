@@ -15,6 +15,7 @@ namespace XONEVirtualMachine.Compiler.Win64
     {
         private readonly VirtualMachine virtualMachine;
         private readonly CodeGenerator codeGen;
+        private readonly OptimizedCodeGenerator optimizedCodeGen;
         private readonly MemoryManager memoryManager = new MemoryManager();
         private readonly IList<CompilationData> compiledFunctions = new List<CompilationData>();
 
@@ -26,6 +27,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             this.virtualMachine = virtualMachine;
             this.codeGen = new CodeGenerator(virtualMachine);
+            this.optimizedCodeGen = new OptimizedCodeGenerator(virtualMachine);
         }
 
         /// <summary>
@@ -38,7 +40,15 @@ namespace XONEVirtualMachine.Compiler.Win64
             //Compile the function
             var compilationData = new CompilationData(function);
             this.compiledFunctions.Add(compilationData);
-            this.codeGen.CompileFunction(compilationData);
+           
+            if (function.Optimize)
+            {
+                this.optimizedCodeGen.CompileFunction(compilationData);
+            }
+            else
+            {
+                this.codeGen.CompileFunction(compilationData);
+            }
 
             //Allocate native memory. The instructions will be copied later when all symbols has been resolved.
             var memory = this.memoryManager.Allocate(function.GeneratedCode.Count);

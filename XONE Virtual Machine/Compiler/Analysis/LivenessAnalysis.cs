@@ -299,9 +299,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
             IDictionary<int, IList<UsageSite>> assignSites;
             GetRegisterUsage(controlFlowGraph, out useSites, out assignSites);
 
-            //Get the backflow fraph
+            //Get the backflow graph
             var backflowGraph = GetBackflow(controlFlowGraph);
 
+            //Perform the analysis for one register at a time
             for (int reg = 0; reg < numRegisters; reg++)
             {
                 IList<UsageSite> registerUseSites;
@@ -315,7 +316,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 else
                 {
                     //This mean that the register is not used. Atm, we do not remove write-only virtual registers.
-                    //So we need to compute the liveness information, else we get an exception in code gen.
+                    //So we need to compute the liveness information, else there won't exist any liveness information for the register.
                     var aliveAt = new HashSet<int>();
                     foreach (var assignSite in assignSites[reg])
                     {

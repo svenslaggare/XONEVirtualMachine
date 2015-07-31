@@ -132,13 +132,43 @@ namespace XONEVirtualMachine
             };
         }
 
+        /// <summary>
+        /// Creates a product function
+        /// </summary>
+        private static Function CreateProductFunction(Win64Container container, int count, bool optimize = false)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.MulInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>())
+            {
+                Optimize = optimize
+            };
+        }
+
         static void Main(string[] args)
         {
             using (var container = new Win64Container())
             {
                 bool optimize = true;
                 //var assembly = Assembly.SingleFunction(CreateSumFunction(container, 100, 1000000, optimize));
-                var assembly = Assembly.SingleFunction(CreateSumFunction2(container, 7, optimize));
+                //var assembly = Assembly.SingleFunction(CreateSumFunction2(container, 10, optimize));
+                var assembly = Assembly.SingleFunction(CreateProductFunction(container, 10, optimize));
 
                 container.LoadAssembly(assembly);
                 container.VirtualMachine.Compile();

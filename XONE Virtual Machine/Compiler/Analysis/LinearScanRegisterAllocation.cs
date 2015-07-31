@@ -35,18 +35,39 @@ namespace XONEVirtualMachine.Compiler.Analysis
     }
 
     /// <summary>
+    /// Represents a spilled register
+    /// </summary>
+    public struct SpilledRegister
+    {
+        /// <summary>
+        /// The stack index
+        /// </summary>
+        public int StackIndex { get; }
+
+        /// <summary>
+        /// The liveness information
+        /// </summary>
+        public LiveInterval LiveInterval { get; }
+
+        /// <summary>
+        /// Creates a new spilled register
+        /// </summary>
+        /// <param name="stackIndex">The stack index</param>
+        /// <param name="liveInterval">The liveness information</param>
+        public SpilledRegister(int stackIndex, LiveInterval liveInterval)
+        {
+            this.StackIndex = stackIndex;
+            this.LiveInterval = liveInterval;
+        }
+    }
+
+    /// <summary>
     /// Represents a register allocation
     /// </summary>
     public class RegisterAllocation
     {
-        private readonly IReadOnlyDictionary<LiveInterval, int> allocated;
-
-        /// <summary>
-        /// The spilled registers
-        /// </summary>
-        public IReadOnlyList<LiveInterval> Spilled { get; }
-
-        private readonly IDictionary<int, AllocatedRegister> registers = new Dictionary<int, AllocatedRegister>();
+        private readonly IDictionary<int, AllocatedRegister> allocated = new Dictionary<int, AllocatedRegister>();
+        private readonly IDictionary<int, SpilledRegister> spilled = new Dictionary<int, SpilledRegister>();
 
         /// <summary>
         /// Creates a new register allocation
@@ -55,12 +76,16 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="spilled">The spilled registers</param>
         public RegisterAllocation(IDictionary<LiveInterval, int> allocated, IList<LiveInterval> spilled)
         {
-            this.allocated = new ReadOnlyDictionary<LiveInterval, int>(allocated);
-            this.Spilled = new ReadOnlyCollection<LiveInterval>(spilled);
-
-            foreach (var interval in this.allocated)
+            int stackIndex = 0;
+            foreach (var interval in spilled)
             {
-                this.registers.Add(interval.Key.VirtualRegister, new AllocatedRegister(interval.Value, interval.Key));
+                this.spilled.Add(interval.VirtualRegister, new SpilledRegister(stackIndex, interval));
+                stackIndex++;
+            }
+
+            foreach (var interval in allocated)
+            {
+                this.allocated.Add(interval.Key.VirtualRegister, new AllocatedRegister(interval.Value, interval.Key));
             }
         }
 
@@ -77,7 +102,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// </summary>
         public int NumSpilledRegisters
         {
-            get { return this.Spilled.Count; }
+            get { return this.spilled.Count; }
         }
 
         /// <summary>
@@ -87,7 +112,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public int? GetRegister(int virtualRegister)
         {
             AllocatedRegister allocatedRegister;
-            if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
+            if (this.allocated.TryGetValue(virtualRegister, out allocatedRegister))
             {
                 return allocatedRegister.HardwareRegister;
             }
@@ -102,9 +127,24 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public AllocatedRegister? GetRegisterAllocation(int virtualRegister)
         {
             AllocatedRegister allocatedRegister;
-            if (this.registers.TryGetValue(virtualRegister, out allocatedRegister))
+            if (this.allocated.TryGetValue(virtualRegister, out allocatedRegister))
             {
                 return allocatedRegister;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the stack index for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        public int? GetStackIndex(int virtualRegister)
+        {
+            SpilledRegister spilledRegister;
+            if (this.spilled.TryGetValue(virtualRegister, out spilledRegister))
+            {
+                return spilledRegister.StackIndex;
             }
 
             return null;

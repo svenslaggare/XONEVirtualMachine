@@ -211,5 +211,85 @@ namespace XONE_Virtual_Machine.Test
 
             return new Function(def, instructions, new List<VMType>() { intType, intType });
         }
+
+        /// <summary>
+        /// Creates a sum function without a loop
+        /// </summary>
+        public static Function SumNoneLoop(Win64Container container, int count)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.AddInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Creates a product function without a loop
+        /// </summary>
+        public static Function ProductNoneLoop(Win64Container container, int count)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.MulInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Creates a sum function without a loop using locals
+        /// </summary>
+        public static Function SumNoneLoopLocal(Win64Container container, int count)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.AddInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { intType });
+        }
     }
 }
