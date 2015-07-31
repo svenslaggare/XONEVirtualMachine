@@ -77,6 +77,68 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             return new IntRegister(extendedRegister);
         }
+
+        /// <summary>
+        /// Checks if lhs == rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator ==(IntRegister lhs, IntRegister rhs)
+        {
+            if (lhs.IsBase != rhs.IsBase)
+            {
+                return false;
+            }
+
+            if (lhs.IsBase)
+            {
+                return lhs.BaseRegister == rhs.BaseRegister;
+            }
+            else
+            {
+                return lhs.ExtendedRegister == rhs.ExtendedRegister;
+            }
+        }
+
+        /// <summary>
+        /// Checks if lhs != rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator !=(IntRegister lhs, IntRegister rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        /// <summary>
+        /// Checks if the current object is equal to the given
+        /// </summary>
+        /// <param name="obj">The object</param>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is IntRegister))
+            {
+                return false;
+            }
+
+            var other = (IntRegister)obj;
+            return this == other;
+        }
+
+        /// <summary>
+        /// Computes the hash code
+        /// </summary>
+        public override int GetHashCode()
+        {
+            if (this.IsBase)
+            {
+                return this.IsBase.GetHashCode() + 31 * (int)this.BaseRegister;
+            }
+            else
+            {
+                return this.IsBase.GetHashCode() + 31 * (int)this.ExtendedRegister;
+            }
+        }
     }
 
     /// <summary>
@@ -191,6 +253,24 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Generates code for an one memory operand instruction with an int value
+        /// </summary>
+        /// <param name="op">The operand</param>
+        /// <param name="value">The value</param>
+        private static void GenerateOneMemoryOperandWithValueInstruction(IList<byte> generatedCode, MemoryOperand op, int value,
+            Action<IList<byte>, Registers, int, int> inst1, Action<IList<byte>, ExtendedRegisters, int, int> inst2)
+        {
+            if (op.Register.IsBase)
+            {
+                inst1(generatedCode, op.Register.BaseRegister, op.Offset, value);
+            }
+            else
+            {
+                inst2(generatedCode, op.Register.ExtendedRegister, op.Offset, value);
+            }
+        }
+
+        /// <summary>
         /// Generates code for an instruction with a register destination and memory source
         /// </summary>
         /// <param name="op1">The first operand</param>
@@ -224,7 +304,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op2">The second operand</param>
         private static void GenerateDestinationMemoryInstruction(IList<byte> generatedCode, MemoryOperand op1, IntRegister op2,
             Action<IList<byte>, Registers, int, Registers> inst1, Action<IList<byte>, ExtendedRegisters, int, ExtendedRegisters> inst2,
-            Action<IList<byte>, ExtendedRegisters, int, Registers> inst3, Action<IList<byte>, Registers, int, ExtendedRegisters> inst4)
+            Action<IList<byte>, Registers, int, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, int, Registers> inst4)
         {
             if (op1.Register.IsBase && op2.IsBase)
             {
@@ -236,11 +316,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
             else if (op1.Register.IsBase && !op2.IsBase)
             {
-                inst3(generatedCode, op1.Register.ExtendedRegister, op1.Offset, op2.BaseRegister);
+                inst3(generatedCode, op1.Register.BaseRegister, op1.Offset, op2.ExtendedRegister);
             }
             else
             {
-                inst4(generatedCode, op1.Register.BaseRegister, op1.Offset, op2.ExtendedRegister);
+                inst4(generatedCode, op1.Register.ExtendedRegister, op1.Offset, op2.BaseRegister);
             }
         }
 
@@ -268,7 +348,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="generatedCode">The generated code</param>
         /// <param name="destination">The destination</param>
         /// <param name="value">The value</param>
-        public static void AddInt(IList<byte> generatedCode, IntRegister destination, int value)
+        public static void Add(IList<byte> generatedCode, IntRegister destination, int value)
         {
             GenerateOneRegisterWithValueInstruction(
                 generatedCode,
@@ -456,6 +536,138 @@ namespace XONEVirtualMachine.Compiler.Win64
                 RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset,
                 RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset,
                 RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
+        }
+
+        /// <summary>
+        /// Moves the given int value to the given register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="value">The value</param>
+        public static void Move(IList<byte> generatedCode, IntRegister destination, int value)
+        {
+            GenerateOneRegisterWithValueInstruction(
+                generatedCode,
+                destination,
+                value,
+                RawAssembler.MoveIntToRegister,
+                RawAssembler.MoveIntToRegister);
+        }
+
+        /// <summary>
+        /// Moves the given int value to the given memory
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination memory</param>
+        /// <param name="value">The value</param>
+        public static void Move(IList<byte> generatedCode, MemoryOperand destination, int value)
+        {
+            GenerateOneMemoryOperandWithValueInstruction(
+                generatedCode,
+                destination,
+                value,
+                RawAssembler.MoveIntToMemoryRegWithOffset,
+                RawAssembler.MoveIntToMemoryRegWithOffset);
+        }
+
+        /// <summary>
+        /// Compares the second register to the first register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Compare(IList<byte> generatedCode, IntRegister destination, IntRegister source)
+        {
+            GenerateTwoRegistersInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.CompareRegisterToRegister,
+                RawAssembler.CompareRegisterToRegister,
+                RawAssembler.CompareRegisterToRegister,
+                RawAssembler.CompareRegisterToRegister);
+        }
+
+        /// <summary>
+        /// Compares the memory operand to the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source memory</param>
+        public static void Compare(IList<byte> generatedCode, IntRegister destination, MemoryOperand source)
+        {
+            GenerateSourceMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset);
+        }
+
+        /// <summary>
+        /// Compares the register to the memory operand
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination memory</param>
+        /// <param name="source">The source</param>
+        public static void Compare(IList<byte> generatedCode, MemoryOperand destination, IntRegister source)
+        {
+            GenerateDestinationMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
+                RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
+                RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
+                RawAssembler.CompareMemoryRegisterWithOffsetToRegister);
+        }
+
+        /// <summary>
+        /// XOR's the second register to the first
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Xor(IList<byte> generatedCode, IntRegister destination, IntRegister source)
+        {
+            GenerateTwoRegistersInstruction(
+                generatedCode,
+                destination,
+                source,
+                (gen, x, y) => RawAssembler.XorRegisterToRegister(gen, x, y),
+                RawAssembler.XorRegisterToRegister,
+                RawAssembler.XorRegisterToRegister,
+                RawAssembler.XorRegisterToRegister);
+        }
+
+        /// <summary>
+        /// Pushes the given register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="register">The register</param>
+        public static void Push(IList<byte> generatedCode, IntRegister register)
+        {
+            GenerateOneRegisterInstruction(
+                generatedCode,
+                register,
+                RawAssembler.PushRegister,
+                RawAssembler.PushRegister);
+        }
+
+        /// <summary>
+        /// Pops the given register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="register">The register</param>
+        public static void Pop(IList<byte> generatedCode, IntRegister register)
+        {
+            GenerateOneRegisterInstruction(
+                generatedCode,
+                register,
+                RawAssembler.PopRegister,
+                RawAssembler.PopRegister);
         }
     }
 }

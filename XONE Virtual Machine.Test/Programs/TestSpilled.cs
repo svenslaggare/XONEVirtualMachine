@@ -128,6 +128,23 @@ namespace XONE_Virtual_Machine.Test.Programs
         }
 
         /// <summary>
+        /// Tests the negative sum function
+        /// </summary>
+        [TestMethod]
+        public void TestNegativeSum()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumAllocatedRegisters"] = 0;
+                int count = 10;
+                var func = TestProgramGenerator.NegativeSumNoneLoop(container, count);
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(container.Execute(), TestProgramGenerator.NegativeSumResult(count));
+            }
+        }
+
+        /// <summary>
         /// Tests the product function
         /// </summary>
         [TestMethod]

@@ -54,144 +54,49 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// A none integer register
-        /// </summary>
-        private struct NoneIntRegister
-        {
-            public bool IsBase { get; set; }
-            public Registers BaseRegister { get; set; }
-            public ExtendedRegisters ExtendedRegister { get; set; }
-
-            public static bool operator ==(NoneIntRegister lhs, NoneIntRegister rhs)
-            {
-                if (lhs.IsBase != rhs.IsBase)
-                {
-                    return false;
-                }
-
-                if (lhs.IsBase)
-                {
-                    return lhs.BaseRegister == rhs.BaseRegister;
-                }
-                else
-                {
-                    return lhs.ExtendedRegister == rhs.ExtendedRegister;
-                }
-            }
-
-            public static bool operator !=(NoneIntRegister lhs, NoneIntRegister rhs)
-            {
-                return !(lhs == rhs);
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (!(obj is NoneIntRegister))
-                {
-                    return false;
-                }
-
-                var other = (NoneIntRegister)obj;
-                return this == other;
-            }
-
-            public override int GetHashCode()
-            {
-                if (this.IsBase)
-                {
-                    return (this.IsBase.GetHashCode() + 1) + 31 * (int)this.BaseRegister;
-                }
-                else
-                {
-                    return (this.IsBase.GetHashCode() + 1) + 31 * (int)this.ExtendedRegister;
-                }
-            }
-
-            public override string ToString()
-            {
-                if (this.IsBase)
-                {
-                    return "R" + this.BaseRegister.ToString();
-                }
-                else
-                {
-                    return this.ExtendedRegister.ToString();
-                }
-            }
-        }
-
-        /// <summary>
         /// Returns the spill register
         /// </summary>
-        private NoneIntRegister GetSpillRegister()
+        private IntRegister GetSpillRegister()
         {
-            return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R12 };
+            return new IntRegister(ExtendedRegisters.R12);
         }
 
         /// <summary>
         /// Returns the register for the given allocated register
         /// </summary>
         /// <param name="register">The register</param>
-        private NoneIntRegister GetRegister(int register)
+        private IntRegister GetRegister(int register)
         {
             if (register == 0)
             {
-                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.AX };
+                return new IntRegister(Registers.AX);
             }
             else if (register == 1)
             {
-                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.CX };
+                return new IntRegister(Registers.CX);
             }
             else if (register == 2)
             {
-                return new NoneIntRegister() { IsBase = true, BaseRegister = Registers.DX };
+                return new IntRegister(Registers.DX);
             }
             else if (register == 3)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R8 };
+                return new IntRegister(ExtendedRegisters.R8);
             }
             else if (register == 4)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R9 };
+                return new IntRegister(ExtendedRegisters.R9);
             }
             else if (register == 5)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R10 };
+                return new IntRegister(ExtendedRegisters.R10);
             }
             else if (register == 6)
             {
-                return new NoneIntRegister() { IsBase = false, ExtendedRegister = ExtendedRegisters.R11 };
+                return new IntRegister(ExtendedRegisters.R11);
             }
 
             throw new InvalidOperationException("The given register is not valid.");
-        }
-
-        /// <summary>
-        /// Generates code for a two register operand instruction
-        /// </summary>
-        /// <param name="generatedCode">The generated code</param>
-        /// <param name="op1">The first operand</param>
-        /// <param name="op2">The second operand</param>
-        private void GenerateTwoRegistersInstruction(IList<byte> generatedCode, NoneIntRegister op1, NoneIntRegister op2,
-            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters> inst2,
-            Action<IList<byte>, Registers, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, Registers> inst4)
-        {
-            if (op1.IsBase && op2.IsBase)
-            {
-                inst1(generatedCode, op1.BaseRegister, op2.BaseRegister);
-            }
-            else if (!op1.IsBase && !op2.IsBase)
-            {
-                inst2(generatedCode, op1.ExtendedRegister, op2.ExtendedRegister);
-            }
-            else if (op1.IsBase && !op2.IsBase)
-            {
-                inst3(generatedCode, op1.BaseRegister, op2.ExtendedRegister);
-            }
-            else
-            {
-                inst4(generatedCode, op1.ExtendedRegister, op2.BaseRegister);
-            }
         }
 
         /// <summary>
@@ -210,10 +115,9 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1Register">The first operand</param>
         /// <param name="op2Register">The second operand</param>
         private void GenerateTwoRegistersInstruction(CompilationData compilationData, int op1Register, int op2Register,
-            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters> inst2,
-            Action<IList<byte>, Registers, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, Registers> inst4,
-            Action<IList<byte>, Registers, Registers, int> inst5, Action<IList<byte>, ExtendedRegisters, Registers, int> inst6,
-            Action<IList<byte>, Registers, int, Registers> inst7, Action<IList<byte>, Registers, int, ExtendedRegisters> inst8,
+            Action<IList<byte>, IntRegister, IntRegister> inst1,
+            Action<IList<byte>, IntRegister, MemoryOperand> inst2,
+            Action<IList<byte>, MemoryOperand, IntRegister> inst3,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
@@ -224,168 +128,75 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!op1Stack.HasValue && !op2Stack.HasValue)
             {
-                var op1Reg = this.GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
-                var op2Reg = this.GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
-
-                if (op1Reg.IsBase && op2Reg.IsBase)
-                {
-                    inst1(generatedCode, op1Reg.BaseRegister, op2Reg.BaseRegister);
-                }
-                else if (!op1Reg.IsBase && !op2Reg.IsBase)
-                {
-                    inst2(generatedCode, op1Reg.ExtendedRegister, op2Reg.ExtendedRegister);
-                }
-                else if (op1Reg.IsBase && !op2Reg.IsBase)
-                {
-                    inst3(generatedCode, op1Reg.BaseRegister, op2Reg.ExtendedRegister);
-                }
-                else
-                {
-                    inst4(generatedCode, op1Reg.ExtendedRegister, op2Reg.BaseRegister);
-                }
+                var op1Reg = GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
+                var op2Reg = GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
+                inst1(generatedCode, op1Reg, op2Reg);
             }
             else if (!op1Stack.HasValue && op2Stack.HasValue)
             {
                 var op1Reg = this.GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
                 var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
-
-                if (op1Reg.IsBase)
-                {
-                    inst5(generatedCode, op1Reg.BaseRegister, Registers.BP, op2StackOffset);
-                }
-                else
-                {
-                    inst6(generatedCode, op1Reg.ExtendedRegister, Registers.BP, op2StackOffset);
-                }
+                inst2(generatedCode, op1Reg, new MemoryOperand(Registers.BP, op2StackOffset));
             }
             else if (op1Stack.HasValue && !op2Stack.HasValue)
             {
                 var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
                 var op2Reg = this.GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
-
-                if (op2Reg.IsBase)
-                {
-                    inst7(generatedCode, Registers.BP, op1StackOffset, op2Reg.BaseRegister);
-                }
-                else
-                {
-                    inst8(generatedCode, Registers.BP, op1StackOffset, op2Reg.ExtendedRegister);
-                }
+                inst3(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), op2Reg);
             }
             else
             {
                 var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
                 var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
-
                 var spillReg = this.GetSpillRegister();
 
-                if (spillReg.IsBase)
+                if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
                 {
-                    if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
-                    {
-                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                            generatedCode,
-                            spillReg.BaseRegister,
-                            Registers.BP,
-                            op2StackOffset);
-
-                        inst7(generatedCode, Registers.BP, op1StackOffset, spillReg.BaseRegister);
-                    }
-                    else
-                    {
-                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                            generatedCode,
-                            spillReg.BaseRegister,
-                            Registers.BP,
-                            op1StackOffset);
-
-                        inst5(generatedCode, spillReg.BaseRegister, Registers.BP, op2StackOffset);
-
-                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                            generatedCode,
-                            Registers.BP,
-                            op1StackOffset,
-                            spillReg.BaseRegister);
-                    }
+                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Registers.BP, op2StackOffset));
+                    inst3(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), spillReg);
                 }
                 else
                 {
-                    if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
-                    {
-                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                            generatedCode,
-                            spillReg.ExtendedRegister,
-                            Registers.BP,
-                            op2StackOffset);
-
-                        inst8(generatedCode, Registers.BP, op1StackOffset, spillReg.ExtendedRegister);
-                    }
-                    else
-                    {
-                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                            generatedCode,
-                            spillReg.ExtendedRegister,
-                            Registers.BP,
-                            op1StackOffset);
-
-                        inst6(generatedCode, spillReg.ExtendedRegister, Registers.BP, op2StackOffset);
-
-                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                            generatedCode,
-                            Registers.BP,
-                            op1StackOffset,
-                            spillReg.ExtendedRegister);
-                    }
+                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Registers.BP, op1StackOffset));
+                    inst2(generatedCode, spillReg, new MemoryOperand(Registers.BP, op2StackOffset));
+                    Assembler.Move(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), spillReg);
                 }
             }
         }
 
         /// <summary>
-        /// Generates code for an one register operand instruction
+        /// Generates code for an instruction with a register destination and memory source
         /// </summary>
-        /// <param name="generatedCode">The generated code</param>
-        /// <param name="op">The operand</param>
-        private void GenerateOneRegisterInstruction(IList<byte> generatedCode, NoneIntRegister op,
-            Action<IList<byte>, Registers> inst1, Action<IList<byte>, ExtendedRegisters> inst2)
+        /// <param name="compilationData">The compilation data</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="op2">The operand</param>
+        private void GenerateSourceMemoryInstruction(CompilationData compilationData, IntRegister destination, int opRegister,
+            Action<IList<byte>, IntRegister, IntRegister> inst1, Action<IList<byte>, IntRegister, MemoryOperand> inst2)
         {
-            if (op.IsBase)
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+            int? opStack = compilationData.RegisterAllocation.GetStackIndex(opRegister);
+
+            if (!opStack.HasValue)
             {
-                inst1(generatedCode, op.BaseRegister);
+                var opReg = this.GetRegister(regAlloc.GetRegister(opRegister) ?? 0);
+                inst1(generatedCode, destination, opReg);
             }
             else
             {
-                inst2(generatedCode, op.ExtendedRegister);
+                var opStackOffset = -RawAssembler.RegisterSize * (1 + opStack.Value);
+                inst2(generatedCode, destination, new MemoryOperand(Registers.BP, opStackOffset));
             }
         }
 
         /// <summary>
-        /// Generates code for an one register operand instruction with an int value
-        /// </summary>
-        /// <param name="generatedCode">The generated code</param>
-        /// <param name="op">The operand</param>
-        /// <param name="value">The value</param>
-        private void GenerateOneRegisterWithValueInstruction(IList<byte> generatedCode, NoneIntRegister op, int value,
-            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, int> inst2)
-        {
-            if (op.IsBase)
-            {
-                inst1(generatedCode, op.BaseRegister, value);
-            }
-            else
-            {
-                inst2(generatedCode, op.ExtendedRegister, value);
-            }
-        }
-
-        /// <summary>
-        /// Generates code for an one register operand instruction with an int value
+        /// Generates code for an one virtual register operand instruction with an int value
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="opRegister">The operand</param>
         /// <param name="value">The value</param>
         private void GenerateOneRegisterWithValueInstruction(CompilationData compilationData, int opRegister, int value,
-            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, int> inst2,
-            Action<IList<byte>, Registers, int, int> inst3)
+            Action<IList<byte>, IntRegister, int> inst1, Action<IList<byte>, MemoryOperand, int> inst2)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
             var regAlloc = compilationData.RegisterAllocation;
@@ -395,20 +206,14 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (!opStack.HasValue)
             {
                 var opReg = this.GetRegister(regAlloc.GetRegister(opRegister) ?? 0);
-
-                if (opReg.IsBase)
-                {
-                    inst1(generatedCode, opReg.BaseRegister, value);
-                }
-                else
-                {
-                    inst2(generatedCode, opReg.ExtendedRegister, value);
-                }
+                inst1(generatedCode, opReg, value);
             }
             else
             {
-                var opStackOffset = -RawAssembler.RegisterSize * (1 + opStack.Value);
-                inst3(generatedCode, Registers.BP, opStackOffset, value);
+                var stackOp = new MemoryOperand(
+                    Registers.BP,
+                    -RawAssembler.RegisterSize * (1 + opStack.Value));
+                inst2(generatedCode, stackOp, value);
             }
         }
 
@@ -440,11 +245,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
             {
-                this.GenerateOneRegisterInstruction(
-                    function.GeneratedCode,
-                    this.GetSpillRegister(),
-                    RawAssembler.PushRegister,
-                    RawAssembler.PushRegister);
+                Assembler.Push(function.GeneratedCode, this.GetSpillRegister());
             }
 
             //Zero locals
@@ -462,14 +263,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
             {
                 var spillReg = this.GetSpillRegister();
-                GenerateTwoRegistersInstruction(
-                    func.GeneratedCode,
-                    spillReg,
-                    spillReg,
-                    (gen, x, y) => RawAssembler.XorRegisterToRegister(gen, x, y),
-                    RawAssembler.XorRegisterToRegister,
-                    null,
-                    null);
+                Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
             }
 
             foreach (var localRegister in compilationData.LocalVirtualRegisters)
@@ -479,15 +273,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 if (reg.HasValue)
                 {
                     var localReg = GetRegister(reg.Value);
-
-                    GenerateTwoRegistersInstruction(
-                        func.GeneratedCode,
-                        localReg,
-                        localReg,
-                        (gen, x, y) => RawAssembler.XorRegisterToRegister(gen, x, y),
-                        RawAssembler.XorRegisterToRegister,
-                        null,
-                        null);
+                    Assembler.Xor(func.GeneratedCode, localReg, localReg);
                 }
                 else
                 {
@@ -496,22 +282,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         -RawAssembler.RegisterSize
                         * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
 
-                    if (spillReg.IsBase)
-                    {
-                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                            func.GeneratedCode,
-                            Registers.BP,
-                            stackOffset,
-                            spillReg.BaseRegister);
-                    }
-                    else
-                    {
-                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                            func.GeneratedCode,
-                            Registers.BP,
-                            stackOffset,
-                            spillReg.ExtendedRegister);
-                    }
+                    Assembler.Move(func.GeneratedCode, new MemoryOperand(Registers.BP, stackOffset), spillReg);
                 }
             }
         }
@@ -526,11 +297,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
             {
-                this.GenerateOneRegisterInstruction(
-                    generatedCode,
-                    this.GetSpillRegister(),
-                    RawAssembler.PopRegister,
-                    RawAssembler.PopRegister);
+                Assembler.Pop(generatedCode, this.GetSpillRegister());
             }
 
             //Restore the base pointer
@@ -575,9 +342,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                             compilationData,
                             storeReg,
                             instruction.IntValue,
-                            RawAssembler.MoveIntToRegister,
-                            RawAssembler.MoveIntToRegister,
-                            RawAssembler.MoveIntToMemoryRegWithOffset);
+                            Assembler.Move,
+                            Assembler.Move);
                     }
                     break;
                 case OpCodes.AddInt:
@@ -596,130 +362,35 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => RawAssembler.AddRegisterToRegister(gen, x, y),
-                                    RawAssembler.AddRegisterToRegister,
-                                    RawAssembler.AddRegisterToRegister,
-                                    RawAssembler.AddRegisterToRegister,
-                                    RawAssembler.AddMemoryRegisterWithOffsetToRegister,
-                                    RawAssembler.AddMemoryRegisterWithOffsetToRegister,
-                                    RawAssembler.AddRegisterToMemoryRegisterWithOffset,
-                                    RawAssembler.AddRegisterToMemoryRegisterWithOffset);
+                                    Assembler.Add,
+                                    Assembler.Add,
+                                    Assembler.Add);
                                 break;
                             case OpCodes.SubInt:
                                 GenerateTwoRegistersInstruction(
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => RawAssembler.SubRegisterFromRegister(gen, x, y),
-                                    RawAssembler.SubRegisterFromRegister,
-                                    RawAssembler.SubRegisterFromRegister,
-                                    RawAssembler.SubRegisterFromRegister,
-                                    RawAssembler.SubMemoryRegisterWithOffsetFromRegister,
-                                    RawAssembler.SubMemoryRegisterWithOffsetFromRegister,
-                                    RawAssembler.SubRegisterFromMemoryRegisterWithOffset,
-                                    RawAssembler.SubRegisterFromMemoryRegisterWithOffset);
+                                    Assembler.Sub,
+                                    Assembler.Sub,
+                                    Assembler.Sub);
                                 break;
                             case OpCodes.MulInt:
-                                Action<IList<byte>, Registers, int, Registers> multRegisterToMemoryRegisterWithOffset = (gen, destMem, offset, src) =>
+                                Action<IList<byte>, MemoryOperand, IntRegister> multRegisterToMemoryRegisterWithOffset = (gen, destMem, src) =>
                                 {
                                     var spillReg = GetSpillRegister();
-
-                                    if (spillReg.IsBase)
-                                    {
-                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                                            gen,
-                                            spillReg.BaseRegister,
-                                            Registers.BP,
-                                            offset);
-
-                                        RawAssembler.MultRegisterToRegister(
-                                            gen,
-                                            spillReg.BaseRegister,
-                                            src);
-
-                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                                            gen,
-                                            Registers.BP,
-                                            offset,
-                                            spillReg.BaseRegister);
-                                    }
-                                    else
-                                    {
-                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                                            gen,
-                                            spillReg.ExtendedRegister,
-                                            Registers.BP,
-                                            offset);
-
-                                        RawAssembler.MultRegisterToRegister(
-                                            gen,
-                                            spillReg.ExtendedRegister,
-                                            src);
-
-                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                                            gen,
-                                            Registers.BP,
-                                            offset,
-                                            spillReg.ExtendedRegister);
-                                    }
-                                };
-
-                                Action<IList<byte>, Registers, int, ExtendedRegisters> multRegisterToMemoryRegisterWithOffset2 = (gen, destMem, offset, src) =>
-                                {
-                                    var spillReg = GetSpillRegister();
-
-                                    if (spillReg.IsBase)
-                                    {
-                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                                            gen,
-                                            spillReg.BaseRegister,
-                                            Registers.BP,
-                                            offset);
-
-                                        RawAssembler.MultRegisterToRegister(
-                                            gen,
-                                            spillReg.BaseRegister,
-                                            src);
-
-                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                                            gen,
-                                            Registers.BP,
-                                            offset,
-                                            spillReg.BaseRegister);
-                                    }
-                                    else
-                                    {
-                                        RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister(
-                                            gen,
-                                            spillReg.ExtendedRegister,
-                                            Registers.BP,
-                                            offset);
-
-                                        RawAssembler.MultRegisterToRegister(
-                                            gen,
-                                            spillReg.ExtendedRegister,
-                                            src);
-
-                                        RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(
-                                            gen,
-                                            Registers.BP,
-                                            offset,
-                                            spillReg.ExtendedRegister);
-                                    }
+                                    Assembler.Move(gen, spillReg, destMem);
+                                    Assembler.Mult(gen, spillReg, src);
+                                    Assembler.Move(gen, destMem, spillReg);
                                 };
 
                                 GenerateTwoRegistersInstruction(
                                     compilationData,
                                     op1Reg,
                                     op2Reg,
-                                    (gen, x, y) => RawAssembler.MultRegisterToRegister(gen, x, y),
-                                    RawAssembler.MultRegisterToRegister,
-                                    RawAssembler.MultRegisterToRegister,
-                                    RawAssembler.MultRegisterToRegister,
-                                    RawAssembler.MultMemoryRegisterWithOffsetToRegister,
-                                    RawAssembler.MultMemoryRegisterWithOffsetToRegister,
+                                    Assembler.Mult,
+                                    Assembler.Mult,
                                     multRegisterToMemoryRegisterWithOffset,
-                                    multRegisterToMemoryRegisterWithOffset2,
                                     MemoryRewrite.MemoryOnRight);
                                 break;
                                 //case OpCodes.DivInt:
@@ -748,47 +419,23 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 storeReg,
                                 op1Reg,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
                         }
                     }
                     break;
                 case OpCodes.Ret:
                     {
                         //Handle the return value
-                        var opVirtualReg = GetUseRegister(0);
-                        var opStack = registerAllocation.GetStackIndex(opVirtualReg);
+                        var opReg = GetUseRegister(0);
 
-                        if (opStack.HasValue)
-                        {
-                            RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
-                                generatedCode,
-                                Registers.AX,
-                                Registers.BP,
-                                -RawAssembler.RegisterSize * (1 + opStack.Value));
-                        }
-                        else
-                        {
-                            var opReg = this.GetRegister(registerAllocation.GetRegister(opVirtualReg) ?? 0);
-
-                            if (!(opReg.IsBase && opReg.BaseRegister == Registers.AX))
-                            {
-                                GenerateTwoRegistersInstruction(
-                                    generatedCode,
-                                    new NoneIntRegister() { IsBase = true, BaseRegister = Registers.AX },
-                                    opReg,
-                                    RawAssembler.MoveRegisterToRegister,
-                                    RawAssembler.MoveRegisterToRegister,
-                                    RawAssembler.MoveRegisterToRegister,
-                                    RawAssembler.MoveRegisterToRegister);
-                            }
-                        }
+                        GenerateSourceMemoryInstruction(
+                            compilationData,
+                            new IntRegister(Registers.AX),
+                            opReg,
+                            Assembler.Move,
+                            Assembler.Move);
 
                         //Restore the base pointer
                         this.CreateEpilog(compilationData);
@@ -809,14 +456,9 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 valueReg,
                                 localReg,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
                         }
                         else
                         {
@@ -827,14 +469,9 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 compilationData,
                                 localReg,
                                 valueReg,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveRegisterToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                RawAssembler.MoveMemoryRegisterWithIntOffsetToRegister,
-                                (gen, destMem, offset, source) => RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset(gen, destMem, offset, source),
-                                RawAssembler.MoveRegisterToMemoryRegisterWithIntOffset);
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
                         }
                     }
                     break;
@@ -863,14 +500,9 @@ namespace XONEVirtualMachine.Compiler.Win64
                             compilationData,
                             op1Reg,
                             op2Reg,
-                            RawAssembler.CompareRegisterToRegister,
-                            RawAssembler.CompareRegisterToRegister,
-                            RawAssembler.CompareRegisterToRegister,
-                            RawAssembler.CompareRegisterToRegister,
-                            RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
-                            RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
-                            RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
-                            RawAssembler.CompareMemoryRegisterWithOffsetToRegister);
+                            Assembler.Compare,
+                            Assembler.Compare,
+                            Assembler.Compare);
 
                         switch (instruction.OpCode)
                         {

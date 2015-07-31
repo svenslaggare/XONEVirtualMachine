@@ -238,6 +238,55 @@ namespace XONE_Virtual_Machine.Test
             return new Function(def, instructions, new List<VMType>());
         }
 
+
+        /// <summary>
+        /// Creates a negative sum function without a loop
+        /// </summary>
+        public static Function NegativeSumNoneLoop(Win64Container container, int count)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.SubInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Computes the result for the negative sum function
+        /// </summary>
+        public static int NegativeSumResult(int count)
+        {
+            var stack = new Stack<int>();
+
+            for (int i = 1; i <= count; i++)
+            {
+                stack.Push(i);
+            }
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                var op2 = stack.Pop();
+                var op1 = stack.Pop();
+                stack.Push(op1 - op2);
+            }
+
+            return stack.Pop();
+        }
+
         /// <summary>
         /// Creates a product function without a loop
         /// </summary>
