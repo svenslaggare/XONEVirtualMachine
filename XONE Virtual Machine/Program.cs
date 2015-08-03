@@ -211,7 +211,7 @@ namespace XONEVirtualMachine
                 //var assembly = Assembly.SingleFunction(CreateProductFunction(container, 10, optimize));
                 var assembly = new Assembly(
                     CreateAddFunction(container, 2, optimize),
-                    CreateLoopCallAdd(container, 20000000, optimize));
+                    CreateLoopCallAdd(container, 30000000, optimize));
 
                 container.LoadAssembly(assembly);
                 container.VirtualMachine.Compile();

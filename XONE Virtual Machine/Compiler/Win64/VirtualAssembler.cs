@@ -97,18 +97,18 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Returns the used registers at the given instruction
+        /// Returns the instructions that are alive at the given instruction
         /// </summary>
         /// <param name="instructionIndex">The index of the instruction</param>
-        public IEnumerable<IntRegister> GetUsedRegisters(int instructionIndex)
+        public IEnumerable<IntRegister> GetAliveRegisters(int instructionIndex)
         {
-            yield return new IntRegister(Register.AX);
-            yield return new IntRegister(Register.CX);
-            yield return new IntRegister(Register.DX);
-            yield return new IntRegister(ExtendedRegister.R8);
-            yield return new IntRegister(ExtendedRegister.R9);
-            yield return new IntRegister(ExtendedRegister.R10);
-            yield return new IntRegister(ExtendedRegister.R11);
+            return this.compilationData.RegisterAllocation
+                .GetAllocatedRegisters()
+                .Where(interval =>
+                {
+                    return instructionIndex >= interval.Start && instructionIndex <= interval.End;
+                })
+                .Select(interval => this.GetRegisterForVirtual(interval.VirtualRegister).Value);
         }
 
         /// <summary>

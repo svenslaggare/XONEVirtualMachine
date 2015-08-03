@@ -237,9 +237,13 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="argumentIndex">The index of the argument</param>
         /// <param name="argumentType">The type of the argument</param>
         /// <param name="argumentRegisters">The virtual registers for the arguments</param>
+        /// <param name="aliveRegistersStack">The alive registers stack</param>
         /// <param name="toCall">The function to call</param>
-        public void CallFunctionArgument(CompilationData compilationData,
-            int argumentIndex, VMType argumentType, IReadOnlyList<int> argumentRegisters,
+        public void CallFunctionArgument(
+            CompilationData compilationData,
+            int argumentIndex, VMType argumentType,
+            IReadOnlyList<int> argumentRegisters,
+            IDictionary<IntRegister, int> aliveRegistersStack,
             FunctionDefinition toCall)
         {
             var virtualAssembler = compilationData.VirtualAssembler;
@@ -252,10 +256,11 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (regAlloc.NumSpilledRegisters > 0)
             {
-                argsStart += 1 + (1 + CalculateStackArguments(toCall.Parameters)) % 2;
+                //argsStart += 1 + (1 + CalculateStackArguments(toCall.Parameters)) % 2;
+                argsStart += 1 + (aliveRegistersStack.Count + CalculateStackArguments(toCall.Parameters)) % 2;
             }
 
-            int alignment = this.CalculateStackAlignment(compilationData, toCall.Parameters);
+            int alignment = this.CalculateStackAlignment(compilationData, toCall.Parameters, aliveRegistersStack.Count);
 
             var virtualReg = argumentRegisters[numArgs - 1 - argumentIndex];
             var virtualRegStack = regAlloc.GetStackIndex(virtualReg);
@@ -277,7 +282,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     argMemory = new MemoryOperand(
                         Register.BP,
-                        -(argsStart + regAlloc.GetRegister(virtualReg) ?? 0)
+                        -(argsStart + aliveRegistersStack[virtualAssembler.GetRegisterForVirtual(virtualReg).Value])
                         * RawAssembler.RegisterSize);
                 }
 
@@ -305,7 +310,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     {
                         argMemory = new MemoryOperand(
                             Register.BP,
-                            -(argsStart + regAlloc.GetRegister(virtualReg) ?? 0)
+                            -(argsStart + aliveRegistersStack[virtualAssembler.GetRegisterForVirtual(virtualReg).Value])
                             * RawAssembler.RegisterSize);
                     }
 
@@ -319,12 +324,16 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="argumentRegisters">The virtual registers for the arguments</param>
+        /// <param name="aliveRegistersStack">The alive registers stack</param>
         /// <param name="toCall">The function to call</param>
-        public void CallFunctionArguments(CompilationData compilationData, IReadOnlyList<int> argumentRegisters, FunctionDefinition toCall)
+        public void CallFunctionArguments(
+            CompilationData compilationData,
+            IReadOnlyList<int> argumentRegisters,
+            IDictionary<IntRegister, int> aliveRegistersStack, FunctionDefinition toCall)
         {
             for (int arg = toCall.Parameters.Count - 1; arg >= 0; arg--)
             {
-                this.CallFunctionArgument(compilationData, arg, toCall.Parameters[arg], argumentRegisters, toCall);
+                this.CallFunctionArgument(compilationData, arg, toCall.Parameters[arg], argumentRegisters, aliveRegistersStack, toCall);
             }
         }
 
@@ -333,10 +342,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="parameters">The parameters of the function to call</param>
-        public int CalculateStackAlignment(CompilationData compilationData, IReadOnlyList<VMType> parameterTypes)
+        /// <param name="numSavedRegisters">The number of saved registers</param>
+        public int CalculateStackAlignment(CompilationData compilationData, IReadOnlyList<VMType> parameterTypes, int numSavedRegisters)
         {
             int numStackArgs = this.CalculateStackArguments(parameterTypes);
-            return (numStackArgs % 2) * RawAssembler.RegisterSize;
+            return ((numStackArgs + numSavedRegisters) % 2) * RawAssembler.RegisterSize;
         }
 
         /// <summary>

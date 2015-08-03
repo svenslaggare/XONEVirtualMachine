@@ -280,15 +280,21 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var funcToCall = this.virtualMachine.Binder.GetFunction(signature);
 
                         //Save registers
-                        foreach (var register in virtualAssembler.GetUsedRegisters(index))
+                        var aliveRegisters = virtualAssembler.GetAliveRegisters(index).ToList();
+                        var aliveRegistersStack = new Dictionary<IntRegister, int>();
+                        int stackIndex = 0;
+
+                        foreach (var register in aliveRegisters)
                         {
                             Assembler.Push(generatedCode, register);
+                            aliveRegistersStack.Add(register, stackIndex++);
                         }
 
                         //Align the stack
                         int stackAlignment = this.callingConvetions.CalculateStackAlignment(
                             compilationData,
-                            funcToCall.Parameters);
+                            funcToCall.Parameters,
+                            aliveRegisters.Count);
 
                         if (stackAlignment > 0)
                         {
@@ -299,7 +305,11 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
 
                         //Set the function arguments
-                        this.callingConvetions.CallFunctionArguments(compilationData, virtualInstruction.UsesRegisters, funcToCall);
+                        this.callingConvetions.CallFunctionArguments(
+                            compilationData,
+                            virtualInstruction.UsesRegisters,
+                            aliveRegistersStack,
+                            funcToCall);
 
                         //Reserve 32 bytes for called function to spill registers
                         RawAssembler.SubByteFromRegister(generatedCode, Register.SP, 32);
@@ -332,7 +342,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var assignRegister = virtualAssembler.GetRegisterForVirtual(GetAssignRegister());
 
                         //Restore registers
-                        foreach (var register in virtualAssembler.GetUsedRegisters(index).Reverse())
+                        foreach (var register in aliveRegisters.Reverse<IntRegister>())
                         {
                             //If the assign register is allocated, check if used.
                             if (assignRegister.HasValue)

@@ -149,6 +149,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
 
             return null;
         }
+
+        /// <summary>
+        /// Returns the liveness information for the allocated registers
+        /// </summary>
+        public IEnumerable<LiveInterval> GetAllocatedRegisters()
+        {
+            return this.allocated.Values.Select(x => x.LiveInterval);
+        }
     }
 
     /// <summary>
