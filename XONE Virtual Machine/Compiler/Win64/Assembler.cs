@@ -19,32 +19,32 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// Returns the base register
         /// </summary>
-        public Registers BaseRegister { get; }
+        public Register BaseRegister { get; }
 
         /// <summary>
         /// Returns the extended register
         /// </summary>
-        public ExtendedRegisters ExtendedRegister { get; }
+        public ExtendedRegister ExtendedRegister { get; }
 
         /// <summary>
         /// Creates a new base register
         /// </summary>
         /// <param name="baseRegister">The base register</param>
-        public IntRegister(Registers baseRegister)
+        public IntRegister(Register baseRegister)
         {
             this.IsBase = true;
             this.BaseRegister = baseRegister;
-            this.ExtendedRegister = ExtendedRegisters.R8;
+            this.ExtendedRegister = ExtendedRegister.R8;
         }
 
         /// <summary>
         /// Creates a new extended register
         /// </summary>
         /// <param name="extendedRegister">The extended register</param>
-        public IntRegister(ExtendedRegisters extendedRegister)
+        public IntRegister(ExtendedRegister extendedRegister)
         {
             this.IsBase = false;
-            this.BaseRegister = Registers.AX;
+            this.BaseRegister = Register.AX;
             this.ExtendedRegister = extendedRegister;
         }
 
@@ -64,7 +64,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Implicits converts the given base register into an int register
         /// </summary>
         /// <param name="baseRegister">The register</param>
-        public static implicit operator IntRegister(Registers baseRegister)
+        public static implicit operator IntRegister(Register baseRegister)
         {
             return new IntRegister(baseRegister);
         }
@@ -73,7 +73,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Implicits converts the given extended register into an int register
         /// </summary>
         /// <param name="extendedRegister">The register</param>
-        public static implicit operator IntRegister(ExtendedRegisters extendedRegister)
+        public static implicit operator IntRegister(ExtendedRegister extendedRegister)
         {
             return new IntRegister(extendedRegister);
         }
@@ -196,8 +196,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1">The first operand</param>
         /// <param name="op2">The second operand</param>
         private static void GenerateTwoRegistersInstruction(IList<byte> generatedCode, IntRegister op1, IntRegister op2,
-            Action<IList<byte>, Registers, Registers> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters> inst2,
-            Action<IList<byte>, Registers, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, Registers> inst4)
+            Action<IList<byte>, Register, Register> inst1, Action<IList<byte>, ExtendedRegister, ExtendedRegister> inst2,
+            Action<IList<byte>, Register, ExtendedRegister> inst3, Action<IList<byte>, ExtendedRegister, Register> inst4)
         {
             if (op1.IsBase && op2.IsBase)
             {
@@ -222,7 +222,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="op">The operand</param>
         private static void GenerateOneRegisterInstruction(IList<byte> generatedCode, IntRegister op,
-            Action<IList<byte>, Registers> inst1, Action<IList<byte>, ExtendedRegisters> inst2)
+            Action<IList<byte>, Register> inst1, Action<IList<byte>, ExtendedRegister> inst2)
         {
             if (op.IsBase)
             {
@@ -240,7 +240,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op">The operand</param>
         /// <param name="value">The value</param>
         private static void GenerateOneRegisterWithValueInstruction(IList<byte> generatedCode, IntRegister op, int value,
-            Action<IList<byte>, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, int> inst2)
+            Action<IList<byte>, Register, int> inst1, Action<IList<byte>, ExtendedRegister, int> inst2)
         {
             if (op.IsBase)
             {
@@ -258,7 +258,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op">The operand</param>
         /// <param name="value">The value</param>
         private static void GenerateOneMemoryOperandWithValueInstruction(IList<byte> generatedCode, MemoryOperand op, int value,
-            Action<IList<byte>, Registers, int, int> inst1, Action<IList<byte>, ExtendedRegisters, int, int> inst2)
+            Action<IList<byte>, Register, int, int> inst1, Action<IList<byte>, ExtendedRegister, int, int> inst2)
         {
             if (op.Register.IsBase)
             {
@@ -276,8 +276,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1">The first operand</param>
         /// <param name="op2">The second operand</param>
         private static void GenerateSourceMemoryInstruction(IList<byte> generatedCode, IntRegister op1, MemoryOperand op2,
-            Action<IList<byte>, Registers, Registers, int> inst1, Action<IList<byte>, ExtendedRegisters, ExtendedRegisters, int> inst2,
-            Action<IList<byte>, Registers, ExtendedRegisters, int> inst3, Action<IList<byte>, ExtendedRegisters, Registers, int> inst4)
+            Action<IList<byte>, Register, Register, int> inst1, Action<IList<byte>, ExtendedRegister, ExtendedRegister, int> inst2,
+            Action<IList<byte>, Register, ExtendedRegister, int> inst3, Action<IList<byte>, ExtendedRegister, Register, int> inst4)
         {
             if (op1.IsBase && op2.Register.IsBase)
             {
@@ -303,8 +303,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="op1">The first operand</param>
         /// <param name="op2">The second operand</param>
         private static void GenerateDestinationMemoryInstruction(IList<byte> generatedCode, MemoryOperand op1, IntRegister op2,
-            Action<IList<byte>, Registers, int, Registers> inst1, Action<IList<byte>, ExtendedRegisters, int, ExtendedRegisters> inst2,
-            Action<IList<byte>, Registers, int, ExtendedRegisters> inst3, Action<IList<byte>, ExtendedRegisters, int, Registers> inst4)
+            Action<IList<byte>, Register, int, Register> inst1, Action<IList<byte>, ExtendedRegister, int, ExtendedRegister> inst2,
+            Action<IList<byte>, Register, int, ExtendedRegister> inst3, Action<IList<byte>, ExtendedRegister, int, Register> inst4)
         {
             if (op1.Register.IsBase && op2.IsBase)
             {
@@ -446,6 +446,22 @@ namespace XONEVirtualMachine.Compiler.Win64
                 RawAssembler.SubRegisterFromMemoryRegisterWithOffset,
                 RawAssembler.SubRegisterFromMemoryRegisterWithOffset,
                 RawAssembler.SubRegisterFromMemoryRegisterWithOffset);
+        }
+
+        /// <summary>
+        /// Subtracts the given value from the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="value">The value to subtract</param>
+        public static void Sub(IList<byte> generatedCode, IntRegister destination, int value)
+        {
+            GenerateOneRegisterWithValueInstruction(
+                generatedCode,
+                destination,
+                value,
+                (gen, x, y) => RawAssembler.SubIntFromRegister(gen, x, y),
+                RawAssembler.SubIntFromRegister);
         }
 
         /// <summary>

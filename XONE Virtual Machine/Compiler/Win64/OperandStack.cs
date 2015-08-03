@@ -59,7 +59,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pops an operand from the operand stack to the given register
         /// </summary>
         /// <param name="register">The register to pop to</param>
-        public void PopRegister(Registers register)
+        public void PopRegister(Register register)
         {
             this.AssertNotEmpty();
 
@@ -67,7 +67,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                 this.function.GeneratedCode,
                 register,
-                Registers.BP,
+                Register.BP,
                 stackOffset); //mov <reg>, [rbp+<operand offset>]
             this.operandTopIndex--;
         }
@@ -76,7 +76,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pops an operand from the operand stack to the given register
         /// </summary>
         /// <param name="register">The register</param>
-        public void PopRegister(ExtendedRegisters register)
+        public void PopRegister(ExtendedRegister register)
         {
             this.AssertNotEmpty();
 
@@ -111,7 +111,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pops an operand from the operand stack to the given register
         /// </summary>
         /// <param name="register">The register</param>
-        public void PopRegister(FloatRegisters register)
+        public void PopRegister(FloatRegister register)
         {
             this.AssertNotEmpty();
 
@@ -146,7 +146,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pushes the given register to the operand stack
         /// </summary>
         /// <param name="register">The register</param>
-        public void PushRegister(Registers register)
+        public void PushRegister(Register register)
         {
             this.operandTopIndex++;
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
@@ -154,7 +154,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             //mov [rbp+<operand offset>], <reg>
             RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                 this.function.GeneratedCode,
-                Registers.BP,
+                Register.BP,
                 stackOffset,
                 register);
         }
@@ -163,7 +163,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pushes the given register to the operand stack
         /// </summary>
         /// <param name="register">The register</param>
-        public void PushRegister(FloatRegisters register)
+        public void PushRegister(FloatRegister register)
         {
             this.operandTopIndex++;
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
@@ -171,7 +171,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             //movss [rbp+<operand offset>], <reg>
             RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                 this.function.GeneratedCode,
-                Registers.BP,
+                Register.BP,
                 stackOffset,
                 register);
         }

@@ -32,7 +32,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="generatedCode">The generated code</param>
         /// <param name="toCall">The address of the function to call</param>
         /// <param name="callRegister">The register where the address will be stored in</param>
-        private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Registers callRegister = Registers.AX)
+        private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Register callRegister = Register.AX)
         {
             RawAssembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
             RawAssembler.CallInRegister(generatedCode, callRegister);
@@ -70,11 +70,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             int stackSize = ((neededStackSize + 15) / 16) * 16;
 
             //Save the base pointer
-            RawAssembler.PushRegister(function.GeneratedCode, Registers.BP); //push rbp
-            RawAssembler.MoveRegisterToRegister(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
+            RawAssembler.PushRegister(function.GeneratedCode, Register.BP); //push rbp
+            RawAssembler.MoveRegisterToRegister(function.GeneratedCode, Register.BP, Register.SP); //mov rbp, rsp
 
             //Make room for the variables on the stack
-            RawAssembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
+            RawAssembler.SubConstantFromRegister(function.GeneratedCode, Register.SP, stackSize); //sub rsp, <size of stack>
 
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
@@ -95,17 +95,17 @@ namespace XONEVirtualMachine.Compiler.Win64
                 //Zero rax
                 RawAssembler.XorRegisterToRegister(
                     func.GeneratedCode,
-                    Registers.AX,
-                    Registers.AX); //xor rax, rax
+                    Register.AX,
+                    Register.AX); //xor rax, rax
 
                 for (int i = 0; i < func.Locals.Count; i++)
                 {
                     int localOffset = (i + func.Definition.Parameters.Count + 1) * -RawAssembler.RegisterSize;
                     RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                         func.GeneratedCode,
-                        Registers.BP,
+                        Register.BP,
                         localOffset,
-                        Registers.AX); //mov [rbp-local], rax
+                        Register.AX); //mov [rbp-local], rax
                 }
             }
         }
@@ -119,8 +119,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             var generatedCode = compilationData.Function.GeneratedCode;
 
             //Restore the base pointer
-            RawAssembler.MoveRegisterToRegister(generatedCode, Registers.SP, Registers.BP); //mov rsp, rbp
-            RawAssembler.PopRegister(generatedCode, Registers.BP); //pop rbp
+            RawAssembler.MoveRegisterToRegister(generatedCode, Register.SP, Register.BP); //mov rsp, rbp
+            RawAssembler.PopRegister(generatedCode, Register.BP); //pop rbp
         }
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             switch (instruction.OpCode)
             {
                 case OpCodes.Pop:
-                    operandStack.PopRegister(Registers.AX);
+                    operandStack.PopRegister(Register.AX);
                     break;
                 case OpCodes.LoadInt:
                     operandStack.PushInt(instruction.IntValue);
@@ -154,53 +154,53 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.SubInt:
                 case OpCodes.MulInt:
                 case OpCodes.DivInt:
-                    operandStack.PopRegister(Registers.CX);
-                    operandStack.PopRegister(Registers.AX);
+                    operandStack.PopRegister(Register.CX);
+                    operandStack.PopRegister(Register.AX);
 
                     switch (instruction.OpCode)
                     {
                         case OpCodes.AddInt:
-                            RawAssembler.AddRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            RawAssembler.AddRegisterToRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                         case OpCodes.SubInt:
-                            RawAssembler.SubRegisterFromRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            RawAssembler.SubRegisterFromRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                         case OpCodes.MulInt:
-                            RawAssembler.MultRegisterToRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            RawAssembler.MultRegisterToRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                         case OpCodes.DivInt:
                             //This sign extends the eax register
                             generatedCode.Add(0x99); //cdq
-                            RawAssembler.DivRegisterFromRegister(generatedCode, Registers.AX, Registers.CX, true);
+                            RawAssembler.DivRegisterFromRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                     }
 
-                    operandStack.PushRegister(Registers.AX);
+                    operandStack.PushRegister(Register.AX);
                     break;
                 case OpCodes.AddFloat:
                 case OpCodes.SubFloat:
                 case OpCodes.MulFloat:
                 case OpCodes.DivFloat:
-                    operandStack.PopRegister(FloatRegisters.XMM1);
-                    operandStack.PopRegister(FloatRegisters.XMM0);
+                    operandStack.PopRegister(FloatRegister.XMM1);
+                    operandStack.PopRegister(FloatRegister.XMM0);
 
                     switch (instruction.OpCode)
                     {
                         case OpCodes.AddFloat:
-                            RawAssembler.AddRegisterToRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            RawAssembler.AddRegisterToRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                         case OpCodes.SubFloat:
-                            RawAssembler.SubRegisterFromRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            RawAssembler.SubRegisterFromRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                         case OpCodes.MulFloat:
-                            RawAssembler.MultRegisterToRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            RawAssembler.MultRegisterToRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                         case OpCodes.DivFloat:
-                            RawAssembler.DivRegisterFromRegister(generatedCode, FloatRegisters.XMM0, FloatRegisters.XMM1);
+                            RawAssembler.DivRegisterFromRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                     }
 
-                    operandStack.PushRegister(FloatRegisters.XMM0);
+                    operandStack.PushRegister(FloatRegister.XMM0);
                     break;
                 case OpCodes.Call:
                     {
@@ -220,7 +220,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         RawAssembler.SubConstantFromRegister(
                             generatedCode,
-                            Registers.SP,
+                            Register.SP,
                             stackAlignment);
 
                         //Generate the call
@@ -242,7 +242,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         //Unalign the stack
                         RawAssembler.AddConstantToRegister(
                             generatedCode,
-                            Registers.SP,
+                            Register.SP,
                             stackAlignment);
 
                         //Hande the return value
@@ -266,12 +266,12 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                             generatedCode,
-                            Registers.AX,
-                            Registers.BP,
+                            Register.AX,
+                            Register.BP,
                             argOffset); //mov rax, [rbp+<arg offset>]
 
                         //Push the loaded value
-                        operandStack.PushRegister(Registers.AX);
+                        operandStack.PushRegister(Register.AX);
                     }
                     break;
                 case OpCodes.LoadLocal:
@@ -287,24 +287,24 @@ namespace XONEVirtualMachine.Compiler.Win64
                             //Load rax with the local
                             RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                                 generatedCode,
-                                Registers.AX,
-                                Registers.BP,
+                                Register.AX,
+                                Register.BP,
                                 localOffset); //mov rax, [rbp+<offset>]
 
                             //Push the loaded value
-                            operandStack.PushRegister(Registers.AX);
+                            operandStack.PushRegister(Register.AX);
                         }
                         else
                         {
                             //Pop the top operand
-                            operandStack.PopRegister(Registers.AX);
+                            operandStack.PopRegister(Register.AX);
 
                             //Store the operand at the given local
                             RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                                 generatedCode,
-                                Registers.BP,
+                                Register.BP,
                                 localOffset,
-                                Registers.AX); //mov [rbp+<local offset>], rax
+                                Register.AX); //mov [rbp+<local offset>], rax
                         }
                     }
                     break;
@@ -328,17 +328,17 @@ namespace XONEVirtualMachine.Compiler.Win64
                         if (opType.IsPrimitiveType(PrimitiveTypes.Int))
                         {
                             //Pop 2 operands
-                            operandStack.PopRegister(Registers.CX);
-                            operandStack.PopRegister(Registers.AX);
+                            operandStack.PopRegister(Register.CX);
+                            operandStack.PopRegister(Register.AX);
 
                             //Compare
-                            RawAssembler.CompareRegisterToRegister(generatedCode, Registers.AX, Registers.CX); //cmp rax, rcx
+                            RawAssembler.CompareRegisterToRegister(generatedCode, Register.AX, Register.CX); //cmp rax, rcx
                         }
                         else if (opType.IsPrimitiveType(PrimitiveTypes.Float))
                         {
                             //Pop 2 operands
-                            operandStack.PopRegister(FloatRegisters.XMM1);
-                            operandStack.PopRegister(FloatRegisters.XMM0);
+                            operandStack.PopRegister(FloatRegister.XMM1);
+                            operandStack.PopRegister(FloatRegister.XMM0);
 
                             //Compare
                             generatedCode.AddRange(new byte[] { 0x0f, 0x2e, 0xc1 }); //ucomiss xmm0, xmm1

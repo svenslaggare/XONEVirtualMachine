@@ -32,7 +32,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="generatedCode">The generated code</param>
         /// <param name="toCall">The address of the function to call</param>
         /// <param name="callRegister">The register where the address will be stored in</param>
-        private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Registers callRegister = Registers.AX)
+        private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Register callRegister = Register.AX)
         {
             RawAssembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
             RawAssembler.CallInRegister(generatedCode, callRegister);
@@ -58,7 +58,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         private IntRegister GetSpillRegister()
         {
-            return new IntRegister(ExtendedRegisters.R12);
+            return new IntRegister(ExtendedRegister.R12);
         }
 
         /// <summary>
@@ -69,31 +69,31 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             if (register == 0)
             {
-                return new IntRegister(Registers.AX);
+                return new IntRegister(Register.AX);
             }
             else if (register == 1)
             {
-                return new IntRegister(Registers.CX);
+                return new IntRegister(Register.CX);
             }
             else if (register == 2)
             {
-                return new IntRegister(Registers.DX);
+                return new IntRegister(Register.DX);
             }
             else if (register == 3)
             {
-                return new IntRegister(ExtendedRegisters.R8);
+                return new IntRegister(ExtendedRegister.R8);
             }
             else if (register == 4)
             {
-                return new IntRegister(ExtendedRegisters.R9);
+                return new IntRegister(ExtendedRegister.R9);
             }
             else if (register == 5)
             {
-                return new IntRegister(ExtendedRegisters.R10);
+                return new IntRegister(ExtendedRegister.R10);
             }
             else if (register == 6)
             {
-                return new IntRegister(ExtendedRegisters.R11);
+                return new IntRegister(ExtendedRegister.R11);
             }
 
             throw new InvalidOperationException("The given register is not valid.");
@@ -136,13 +136,13 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 var op1Reg = this.GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
                 var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
-                inst2(generatedCode, op1Reg, new MemoryOperand(Registers.BP, op2StackOffset));
+                inst2(generatedCode, op1Reg, new MemoryOperand(Register.BP, op2StackOffset));
             }
             else if (op1Stack.HasValue && !op2Stack.HasValue)
             {
                 var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
                 var op2Reg = this.GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
-                inst3(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), op2Reg);
+                inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
             }
             else
             {
@@ -152,14 +152,14 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
                 {
-                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Registers.BP, op2StackOffset));
-                    inst3(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), spillReg);
+                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Register.BP, op2StackOffset));
+                    inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), spillReg);
                 }
                 else
                 {
-                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Registers.BP, op1StackOffset));
-                    inst2(generatedCode, spillReg, new MemoryOperand(Registers.BP, op2StackOffset));
-                    Assembler.Move(generatedCode, new MemoryOperand(Registers.BP, op1StackOffset), spillReg);
+                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Register.BP, op1StackOffset));
+                    inst2(generatedCode, spillReg, new MemoryOperand(Register.BP, op2StackOffset));
+                    Assembler.Move(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), spillReg);
                 }
             }
         }
@@ -185,7 +185,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             else
             {
                 var opStackOffset = -RawAssembler.RegisterSize * (1 + opStack.Value);
-                inst2(generatedCode, destination, new MemoryOperand(Registers.BP, opStackOffset));
+                inst2(generatedCode, destination, new MemoryOperand(Register.BP, opStackOffset));
             }
         }
 
@@ -211,7 +211,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             else
             {
                 var stackOp = new MemoryOperand(
-                    Registers.BP,
+                    Register.BP,
                     -RawAssembler.RegisterSize * (1 + opStack.Value));
                 inst2(generatedCode, stackOp, value);
             }
@@ -234,11 +234,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             int stackSize = ((neededStackSize + 15) / 16) * 16;
 
             //Save the base pointer
-            Assembler.Push(function.GeneratedCode, Registers.BP); //push rbp
-            Assembler.Move(function.GeneratedCode, Registers.BP, Registers.SP); //mov rbp, rsp
+            Assembler.Push(function.GeneratedCode, Register.BP);
+            Assembler.Move(function.GeneratedCode, Register.BP, Register.SP);
 
             //Make room for the variables on the stack
-            RawAssembler.SubConstantFromRegister(function.GeneratedCode, Registers.SP, stackSize); //sub rsp, <size of stack>
+            Assembler.Sub(function.GeneratedCode, Register.SP, stackSize);
 
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
@@ -262,6 +262,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
             {
+                //Zero the spill register
                 var spillReg = this.GetSpillRegister();
                 Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
             }
@@ -272,6 +273,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 if (reg.HasValue)
                 {
+                    //Zero the local register
                     var localReg = GetRegister(reg.Value);
                     Assembler.Xor(func.GeneratedCode, localReg, localReg);
                 }
@@ -282,7 +284,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         -RawAssembler.RegisterSize
                         * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
 
-                    Assembler.Move(func.GeneratedCode, new MemoryOperand(Registers.BP, stackOffset), spillReg);
+                    Assembler.Move(func.GeneratedCode, new MemoryOperand(Register.BP, stackOffset), spillReg);
                 }
             }
         }
@@ -301,8 +303,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
 
             //Restore the base pointer
-            Assembler.Move(generatedCode, Registers.SP, Registers.BP);  //mov rsp, rbp
-            Assembler.Pop(generatedCode, Registers.BP); //pop rbp
+            Assembler.Move(generatedCode, Register.SP, Register.BP);
+            Assembler.Pop(generatedCode, Register.BP);
         }
 
         /// <summary>
@@ -432,7 +434,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         GenerateSourceMemoryInstruction(
                             compilationData,
-                            new IntRegister(Registers.AX),
+                            new IntRegister(Register.AX),
                             opReg,
                             Assembler.Move,
                             Assembler.Move);

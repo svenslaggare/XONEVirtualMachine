@@ -15,22 +15,22 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The first argument
         /// </summary>
-        public const FloatRegisters Argument0 = FloatRegisters.XMM0;
+        public const FloatRegister Argument0 = FloatRegister.XMM0;
 
         /// <summary>
         /// The second argument
         /// </summary>
-        public const FloatRegisters Argument1 = FloatRegisters.XMM1;
+        public const FloatRegister Argument1 = FloatRegister.XMM1;
 
         /// <summary>
         /// The third argument
         /// </summary>
-        public const FloatRegisters Argument2 = FloatRegisters.XMM2;
+        public const FloatRegister Argument2 = FloatRegister.XMM2;
 
         /// <summary>
         /// The fourth argument
         /// </summary>
-        public const FloatRegisters Argument3 = FloatRegisters.XMM3;
+        public const FloatRegister Argument3 = FloatRegister.XMM3;
     }
 
     /// <summary>
@@ -41,29 +41,29 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The first argument
         /// </summary>
-        public const Registers Argument0 = Registers.CX;
+        public const Register Argument0 = Register.CX;
 
         /// <summary>
         /// The second argument
         /// </summary>
-        public const Registers Argument1 = Registers.DX;
+        public const Register Argument1 = Register.DX;
 
         /// <summary>
         /// The third argument
         /// </summary>
-        public const ExtendedRegisters Argument2 = ExtendedRegisters.R8;
+        public const ExtendedRegister Argument2 = ExtendedRegister.R8;
 
         /// <summary>
         /// The fourth argument
         /// </summary>
-        public const ExtendedRegisters Argument3 = ExtendedRegisters.R9;
+        public const ExtendedRegister Argument3 = ExtendedRegister.R9;
     }
 
     /// <summary>
     /// Defines the calling conventions for Windows x64.
     /// </summary>
     /// <remarks>
-    ///     See <see href="https://en.wikipedia.org/wiki/X86_calling_conventions#Microsoft_x64_calling_convention">link<see/> for more details.
+    /// See <see href="https://en.wikipedia.org/wiki/X86_calling_conventions#Microsoft_x64_calling_convention">link<see/> for more details.
     /// </remarks>
     public class CallingConvetions
     {
@@ -117,22 +117,22 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                     generatedCode,
-                    Registers.AX,
-                    Registers.BP,
+                    Register.AX,
+                    Register.BP,
                     RawAssembler.RegisterSize * (2 + stackArgumentIndex) + stackAlignment); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
-                    Registers.AX); //mov [rbp+<arg offset>], rax
+                    Register.AX); //mov [rbp+<arg offset>], rax
             }
 
             if (argumentIndex == 3)
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     RegisterCallArguments.Argument3); //mov [rbp+<arg offset>], <reg arg 3>
             }
@@ -141,7 +141,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     RegisterCallArguments.Argument2); //mov [rbp+<arg offset>], <reg arg 2>
             }
@@ -150,7 +150,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     RegisterCallArguments.Argument1); //mov [rbp+<arg offset>], <reg arg 1>
             }
@@ -159,7 +159,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     RegisterCallArguments.Argument0); //mov [rbp+<arg offset>], <reg arg 0>
             }
@@ -184,22 +184,22 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                     generatedCode,
-                    Registers.AX,
-                    Registers.BP,
+                    Register.AX,
+                    Register.BP,
                     RawAssembler.RegisterSize * (2 + stackArgumentIndex) + stackAlignment); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
-                    Registers.AX); //mov [rbp+<arg offset>], rax
+                    Register.AX); //mov [rbp+<arg offset>], rax
             }
 
             if (argumentIndex == 3)
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     FloatRegisterCallArguments.Argument3); //movss [rbp+<arg offset>], <reg arg 3>
             }
@@ -208,7 +208,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     FloatRegisterCallArguments.Argument2); //movss [rbp+<arg offset>], <reg arg 2>
             }
@@ -217,7 +217,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     FloatRegisterCallArguments.Argument1); //movss [rbp+<arg offset>], <reg arg 1>
             }
@@ -226,7 +226,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
-                    Registers.BP,
+                    Register.BP,
                     argStackOffset,
                     FloatRegisterCallArguments.Argument0); //movss [rbp+<arg offset>], <reg arg 0>
             }
@@ -295,8 +295,8 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (argumentIndex >= numRegisterArguments)
             {
                 //Move from the operand stack to the normal stack
-                operandStack.PopRegister(Registers.AX);
-                RawAssembler.PushRegister(compilationData.Function.GeneratedCode, Registers.AX);
+                operandStack.PopRegister(Register.AX);
+                RawAssembler.PushRegister(compilationData.Function.GeneratedCode, Register.AX);
             }
             else
             {
@@ -383,11 +383,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 if (def.ReturnType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-                    compilationData.OperandStack.PopRegister(FloatRegisters.XMM0);
+                    compilationData.OperandStack.PopRegister(FloatRegister.XMM0);
                 }
                 else
                 {
-                    compilationData.OperandStack.PopRegister(Registers.AX);
+                    compilationData.OperandStack.PopRegister(Register.AX);
                 }
             }
         }
@@ -406,7 +406,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.AddConstantToRegister(
                     compilationData.Function.GeneratedCode,
-                    Registers.SP,
+                    Register.SP,
                     numStackArgs * RawAssembler.RegisterSize);
             }
 
@@ -414,11 +414,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 if (toCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-                    compilationData.OperandStack.PushRegister(FloatRegisters.XMM0);
+                    compilationData.OperandStack.PushRegister(FloatRegister.XMM0);
                 }
                 else
                 {
-                    compilationData.OperandStack.PushRegister(Registers.AX);
+                    compilationData.OperandStack.PushRegister(Register.AX);
                 }
             }
         }
