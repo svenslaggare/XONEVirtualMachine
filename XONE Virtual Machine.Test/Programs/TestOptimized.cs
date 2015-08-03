@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -25,7 +26,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.Simple(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), 6);
+                Assert.AreEqual(6, container.Execute());
             }
         }
 
@@ -40,7 +41,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.Simple2(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), 12);
+                Assert.AreEqual(12, container.Execute());
             }
         }
 
@@ -55,7 +56,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.Simple3(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), 15);
+                Assert.AreEqual(15, container.Execute());
             }
         }
 
@@ -70,7 +71,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.Locals(container);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), 4);
+                Assert.AreEqual(4, container.Execute());
             }
         }
 
@@ -86,7 +87,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.LoopCount(container, count);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), count);
+                Assert.AreEqual(count, container.Execute());
             }
         }
 
@@ -102,7 +103,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.SumNoneLoop(container, count);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), (count * (count + 1)) / 2);
+                Assert.AreEqual((count * (count + 1)) / 2, container.Execute());
             }
         }
 
@@ -118,7 +119,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.SumNoneLoopLocal(container, count);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), (count * (count + 1)) / 2);
+                Assert.AreEqual((count * (count + 1)) / 2, container.Execute());
             }
         }
 
@@ -134,7 +135,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.NegativeSumNoneLoop(container, count);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), TestProgramGenerator.NegativeSumResult(count));
+                Assert.AreEqual(TestProgramGenerator.NegativeSumResult(count), container.Execute());
             }
         }
 
@@ -151,7 +152,122 @@ namespace XONE_Virtual_Machine.Test.Programs
                 var func = TestProgramGenerator.ProductNoneLoop(container, count);
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
-                Assert.AreEqual(container.Execute(), product);
+                Assert.AreEqual(product, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests function calls
+        /// </summary>
+        [TestMethod]
+        public void TestCall()
+        {
+            using (var container = new Win64Container())
+            {
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var paramsType = Enumerable.Repeat(intType, 3).ToList();
+
+                var addFunc = new Function(
+                    new FunctionDefinition("add", paramsType, intType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadArgument, 0),
+                        new Instruction(OpCodes.LoadArgument, 1),
+                        new Instruction(OpCodes.AddInt),
+                        new Instruction(OpCodes.LoadArgument, 2),
+                        new Instruction(OpCodes.AddInt),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                var mainFunc = new Function(
+                    new FunctionDefinition("main", new List<VMType>(), intType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadInt, 3),
+                        new Instruction(OpCodes.LoadInt, 4),
+                        new Instruction(OpCodes.LoadInt, 5),
+                        new Instruction(OpCodes.Call, "add", paramsType.ToList()),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                container.LoadAssembly(new Assembly(addFunc, mainFunc));
+                Assert.AreEqual(12, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests function calls
+        /// </summary>
+        [TestMethod]
+        public void TestCallOrder()
+        {
+            using (var container = new Win64Container())
+            {
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var paramsType = Enumerable.Repeat(intType, 2).ToList();
+
+                var addFunc = new Function(
+                    new FunctionDefinition("sub", paramsType, intType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadArgument, 0),
+                        new Instruction(OpCodes.LoadArgument, 1),
+                        new Instruction(OpCodes.SubInt),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                var mainFunc = new Function(
+                    new FunctionDefinition("main", new List<VMType>(), intType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadInt, 6),
+                        new Instruction(OpCodes.LoadInt, 2),
+                        new Instruction(OpCodes.Call, "sub", paramsType.ToList()),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                container.LoadAssembly(new Assembly(addFunc, mainFunc));
+                Assert.AreEqual(4, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests function calls
+        /// </summary>
+        [TestMethod]
+        public void TestCall2()
+        {
+            for (int i = 1; i <= 16; i++)
+            {
+                using (var container = new Win64Container())
+                {
+                    var mainFunc = TestProgramGenerator.AddMainFunction(container, i);
+                    mainFunc.Optimize = true;
+
+                    var addFunc = TestProgramGenerator.AddFunction(container, i);
+                    addFunc.Optimize = true;
+
+                    var assembly = new Assembly(mainFunc, addFunc);
+
+                    container.VirtualMachine.LoadAssembly(assembly);
+                    Assert.AreEqual(i * (1 + i) / 2, container.Execute());
+                }
             }
         }
     }

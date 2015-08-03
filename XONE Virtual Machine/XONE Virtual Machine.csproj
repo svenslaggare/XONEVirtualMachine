@@ -72,7 +72,9 @@
     <Compile Include="Compiler\Analysis\VirtualRegisters.cs" />
     <Compile Include="Compiler\UnresolvedBranchTarget.cs" />
     <Compile Include="Compiler\Win64\Assembler.cs" />
+    <Compile Include="Compiler\Win64\OptimizedCallingConventions.cs" />
     <Compile Include="Compiler\Win64\OptimizedCodeGenerator.cs" />
+    <Compile Include="Compiler\Win64\VirtualAssembler.cs" />
     <Compile Include="Core\Assembly.cs" />
     <Compile Include="Core\Binder.cs" />
     <Compile Include="Compiler\IJITCompiler.cs" />

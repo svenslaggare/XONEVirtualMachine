@@ -15,7 +15,7 @@ namespace XONEVirtualMachine.Compiler.Win64
     public class OptimizedCodeGenerator
     {
         private readonly VirtualMachine virtualMachine;
-        private readonly CallingConvetions callingConvetions = new CallingConvetions();
+        private readonly OptimizedCallingConventions callingConvetions = new OptimizedCallingConventions();
 
         /// <summary>
         /// Creates a new code generator
@@ -62,162 +62,6 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Returns the register for the given allocated register
-        /// </summary>
-        /// <param name="register">The register</param>
-        private IntRegister GetRegister(int register)
-        {
-            if (register == 0)
-            {
-                return new IntRegister(Register.AX);
-            }
-            else if (register == 1)
-            {
-                return new IntRegister(Register.CX);
-            }
-            else if (register == 2)
-            {
-                return new IntRegister(Register.DX);
-            }
-            else if (register == 3)
-            {
-                return new IntRegister(ExtendedRegister.R8);
-            }
-            else if (register == 4)
-            {
-                return new IntRegister(ExtendedRegister.R9);
-            }
-            else if (register == 5)
-            {
-                return new IntRegister(ExtendedRegister.R10);
-            }
-            else if (register == 6)
-            {
-                return new IntRegister(ExtendedRegister.R11);
-            }
-
-            throw new InvalidOperationException("The given register is not valid.");
-        }
-
-        /// <summary>
-        /// Handles how two memory operands are rewritten
-        /// </summary>
-        private enum MemoryRewrite
-        {
-            MemoryOnLeft,
-            MemoryOnRight
-        }
-
-        /// <summary>
-        /// Generates code for a two register operand instruction
-        /// </summary>
-        /// <param name="compilationData">The compilation data</param>
-        /// <param name="op1Register">The first operand</param>
-        /// <param name="op2Register">The second operand</param>
-        private void GenerateTwoRegistersInstruction(CompilationData compilationData, int op1Register, int op2Register,
-            Action<IList<byte>, IntRegister, IntRegister> inst1,
-            Action<IList<byte>, IntRegister, MemoryOperand> inst2,
-            Action<IList<byte>, MemoryOperand, IntRegister> inst3,
-            MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
-        {
-            var generatedCode = compilationData.Function.GeneratedCode;
-            var regAlloc = compilationData.RegisterAllocation;
-
-            int? op1Stack = compilationData.RegisterAllocation.GetStackIndex(op1Register);
-            int? op2Stack = compilationData.RegisterAllocation.GetStackIndex(op2Register);
-
-            if (!op1Stack.HasValue && !op2Stack.HasValue)
-            {
-                var op1Reg = GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
-                var op2Reg = GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
-                inst1(generatedCode, op1Reg, op2Reg);
-            }
-            else if (!op1Stack.HasValue && op2Stack.HasValue)
-            {
-                var op1Reg = this.GetRegister(regAlloc.GetRegister(op1Register) ?? 0);
-                var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
-                inst2(generatedCode, op1Reg, new MemoryOperand(Register.BP, op2StackOffset));
-            }
-            else if (op1Stack.HasValue && !op2Stack.HasValue)
-            {
-                var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
-                var op2Reg = this.GetRegister(regAlloc.GetRegister(op2Register) ?? 0);
-                inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
-            }
-            else
-            {
-                var op1StackOffset = -RawAssembler.RegisterSize * (1 + op1Stack.Value);
-                var op2StackOffset = -RawAssembler.RegisterSize * (1 + op2Stack.Value);
-                var spillReg = this.GetSpillRegister();
-
-                if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
-                {
-                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Register.BP, op2StackOffset));
-                    inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), spillReg);
-                }
-                else
-                {
-                    Assembler.Move(generatedCode, spillReg, new MemoryOperand(Register.BP, op1StackOffset));
-                    inst2(generatedCode, spillReg, new MemoryOperand(Register.BP, op2StackOffset));
-                    Assembler.Move(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), spillReg);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Generates code for an instruction with a register destination and memory source
-        /// </summary>
-        /// <param name="compilationData">The compilation data</param>
-        /// <param name="destination">The destination</param>
-        /// <param name="op2">The operand</param>
-        private void GenerateSourceMemoryInstruction(CompilationData compilationData, IntRegister destination, int opRegister,
-            Action<IList<byte>, IntRegister, IntRegister> inst1, Action<IList<byte>, IntRegister, MemoryOperand> inst2)
-        {
-            var generatedCode = compilationData.Function.GeneratedCode;
-            var regAlloc = compilationData.RegisterAllocation;
-            int? opStack = compilationData.RegisterAllocation.GetStackIndex(opRegister);
-
-            if (!opStack.HasValue)
-            {
-                var opReg = this.GetRegister(regAlloc.GetRegister(opRegister) ?? 0);
-                inst1(generatedCode, destination, opReg);
-            }
-            else
-            {
-                var opStackOffset = -RawAssembler.RegisterSize * (1 + opStack.Value);
-                inst2(generatedCode, destination, new MemoryOperand(Register.BP, opStackOffset));
-            }
-        }
-
-        /// <summary>
-        /// Generates code for an one virtual register operand instruction with an int value
-        /// </summary>
-        /// <param name="compilationData">The compilation data</param>
-        /// <param name="opRegister">The operand</param>
-        /// <param name="value">The value</param>
-        private void GenerateOneRegisterWithValueInstruction(CompilationData compilationData, int opRegister, int value,
-            Action<IList<byte>, IntRegister, int> inst1, Action<IList<byte>, MemoryOperand, int> inst2)
-        {
-            var generatedCode = compilationData.Function.GeneratedCode;
-            var regAlloc = compilationData.RegisterAllocation;
-
-            var opStack = regAlloc.GetStackIndex(opRegister);
-
-            if (!opStack.HasValue)
-            {
-                var opReg = this.GetRegister(regAlloc.GetRegister(opRegister) ?? 0);
-                inst1(generatedCode, opReg, value);
-            }
-            else
-            {
-                var stackOp = new MemoryOperand(
-                    Register.BP,
-                    -RawAssembler.RegisterSize * (1 + opStack.Value));
-                inst2(generatedCode, stackOp, value);
-            }
-        }
-
-        /// <summary>
         /// Creates the function prolog
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
@@ -260,31 +104,34 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             var func = compilationData.Function;
 
-            if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
+            if (func.Locals.Count > 0)
             {
-                //Zero the spill register
-                var spillReg = this.GetSpillRegister();
-                Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
-            }
-
-            foreach (var localRegister in compilationData.LocalVirtualRegisters)
-            {
-                var reg = compilationData.RegisterAllocation.GetRegister(localRegister);
-
-                if (reg.HasValue)
+                if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
                 {
-                    //Zero the local register
-                    var localReg = GetRegister(reg.Value);
-                    Assembler.Xor(func.GeneratedCode, localReg, localReg);
-                }
-                else
-                {
+                    //Zero the spill register
                     var spillReg = this.GetSpillRegister();
-                    int stackOffset = 
-                        -RawAssembler.RegisterSize
-                        * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
+                    Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
+                }
 
-                    Assembler.Move(func.GeneratedCode, new MemoryOperand(Register.BP, stackOffset), spillReg);
+                foreach (var localRegister in compilationData.LocalVirtualRegisters)
+                {
+                    var reg = compilationData.RegisterAllocation.GetRegister(localRegister);
+
+                    if (reg.HasValue)
+                    {
+                        //Zero the local register
+                        var localReg = compilationData.VirtualAssembler.GetRegister(reg.Value);
+                        Assembler.Xor(func.GeneratedCode, localReg, localReg);
+                    }
+                    else
+                    {
+                        var spillReg = this.GetSpillRegister();
+                        int stackOffset =
+                            -RawAssembler.RegisterSize
+                            * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
+
+                        Assembler.Move(func.GeneratedCode, new MemoryOperand(Register.BP, stackOffset), spillReg);
+                    }
                 }
             }
         }
@@ -323,6 +170,8 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             var instruction = virtualInstruction.Instruction;
             var registerAllocation = compilationData.RegisterAllocation;
+            var virtualAssembler = compilationData.VirtualAssembler;
+            int stackOffset = 1;
 
             Func<int> GetAssignRegister = () =>
             {
@@ -340,8 +189,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     {
                         var storeReg = GetAssignRegister();
 
-                        GenerateOneRegisterWithValueInstruction(
-                            compilationData,
+                        virtualAssembler.GenerateOneRegisterWithValueInstruction(
                             storeReg,
                             instruction.IntValue,
                             Assembler.Move,
@@ -360,8 +208,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         switch (instruction.OpCode)
                         {
                             case OpCodes.AddInt:
-                                GenerateTwoRegistersInstruction(
-                                    compilationData,
+                                virtualAssembler.GenerateTwoRegistersInstruction(
                                     op1Reg,
                                     op2Reg,
                                     Assembler.Add,
@@ -369,8 +216,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     Assembler.Add);
                                 break;
                             case OpCodes.SubInt:
-                                GenerateTwoRegistersInstruction(
-                                    compilationData,
+                                virtualAssembler.GenerateTwoRegistersInstruction(
                                     op1Reg,
                                     op2Reg,
                                     Assembler.Sub,
@@ -386,8 +232,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     Assembler.Move(gen, destMem, spillReg);
                                 };
 
-                                GenerateTwoRegistersInstruction(
-                                    compilationData,
+                                virtualAssembler.GenerateTwoRegistersInstruction(
                                     op1Reg,
                                     op2Reg,
                                     Assembler.Mult,
@@ -417,8 +262,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         if (op1Reg != storeReg)
                         {
-                            GenerateTwoRegistersInstruction(
-                                compilationData,
+                            virtualAssembler.GenerateTwoRegistersInstruction(
                                 storeReg,
                                 op1Reg,
                                 Assembler.Move,
@@ -427,23 +271,112 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
                     }
                     break;
+                case OpCodes.Call:
+                    {
+                        var signature = this.virtualMachine.Binder.FunctionSignature(
+                            instruction.StringValue,
+                            instruction.Parameters);
+
+                        var funcToCall = this.virtualMachine.Binder.GetFunction(signature);
+
+                        //Save registers
+                        foreach (var register in virtualAssembler.GetUsedRegisters(index))
+                        {
+                            Assembler.Push(generatedCode, register);
+                        }
+
+                        //Align the stack
+                        int stackAlignment = this.callingConvetions.CalculateStackAlignment(
+                            compilationData,
+                            funcToCall.Parameters);
+
+                        if (stackAlignment > 0)
+                        {
+                            RawAssembler.SubConstantFromRegister(
+                                generatedCode,
+                                Register.SP,
+                                stackAlignment);
+                        }
+
+                        //Set the function arguments
+                        this.callingConvetions.CallFunctionArguments(compilationData, virtualInstruction.UsesRegisters, funcToCall);
+
+                        //Reserve 32 bytes for called function to spill registers
+                        RawAssembler.SubByteFromRegister(generatedCode, Register.SP, 32);
+
+                        //Generate the call
+                        if (funcToCall.IsManaged)
+                        {
+                            //Mark that the function call needs to be patched with the entry point later
+                            compilationData.UnresolvedFunctionCalls.Add(new UnresolvedFunctionCall(
+                                FunctionCallAddressModes.Relative,
+                                funcToCall,
+                                generatedCode.Count));
+
+                            RawAssembler.Call(generatedCode, 0);
+                        }
+                        else
+                        {
+                            this.GenerateCall(generatedCode, funcToCall.EntryPoint);
+                        }
+
+                        //Unalign the stack
+                        RawAssembler.AddConstantToRegister(
+                            generatedCode,
+                            Register.SP,
+                            stackAlignment + 32);
+
+                        //Hande the return value
+                        this.callingConvetions.HandleReturnValue(compilationData, funcToCall, GetAssignRegister());
+
+                        var assignRegister = virtualAssembler.GetRegisterForVirtual(GetAssignRegister());
+
+                        //Restore registers
+                        foreach (var register in virtualAssembler.GetUsedRegisters(index).Reverse())
+                        {
+                            //If the assign register is allocated, check if used.
+                            if (assignRegister.HasValue)
+                            {
+                                if (register != assignRegister.Value)
+                                {
+                                    Assembler.Pop(generatedCode, register);
+                                }
+                                else
+                                {
+                                    //The assign register will have the return value as value, so don't pop to a register.
+                                    Assembler.Pop(generatedCode);
+                                }
+                            }
+                            else
+                            {
+                                Assembler.Pop(generatedCode, register);
+                            }
+                        }
+                    }
+                    break;
                 case OpCodes.Ret:
                     {
                         //Handle the return value
-                        var opReg = GetUseRegister(0);
-
-                        GenerateSourceMemoryInstruction(
-                            compilationData,
-                            new IntRegister(Register.AX),
-                            opReg,
-                            Assembler.Move,
-                            Assembler.Move);
+                        this.callingConvetions.MakeReturnValue(compilationData, GetUseRegister(0));
 
                         //Restore the base pointer
                         this.CreateEpilog(compilationData);
 
                         //Make the return
                         RawAssembler.Return(generatedCode);
+                    }
+                    break;
+                case OpCodes.LoadArgument:
+                    {
+                        //Load the virtual register with the argument valuie
+                        int argOffset = (instruction.IntValue + stackOffset) * -RawAssembler.RegisterSize;
+                        var storeReg = GetAssignRegister();
+
+                        virtualAssembler.GenerateOneInstructionMemorySourceInstruction(
+                            storeReg,
+                            new MemoryOperand(Register.BP, argOffset),
+                            Assembler.Move,
+                            Assembler.Move);
                     }
                     break;
                 case OpCodes.LoadLocal:
@@ -454,8 +387,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             var valueReg = GetAssignRegister();
                             var localReg = GetUseRegister(0);
 
-                            GenerateTwoRegistersInstruction(
-                                compilationData,
+                            virtualAssembler.GenerateTwoRegistersInstruction(
                                 valueReg,
                                 localReg,
                                 Assembler.Move,
@@ -467,8 +399,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             var valueReg = GetUseRegister(0);
                             var localReg = GetAssignRegister();
 
-                            GenerateTwoRegistersInstruction(
-                                compilationData,
+                            virtualAssembler.GenerateTwoRegistersInstruction(
                                 localReg,
                                 valueReg,
                                 Assembler.Move,
@@ -498,8 +429,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var op1Reg = GetUseRegister(1);
 
                         //Compare
-                        GenerateTwoRegistersInstruction(
-                            compilationData,
+                        virtualAssembler.GenerateTwoRegistersInstruction(
                             op1Reg,
                             op2Reg,
                             Assembler.Compare,

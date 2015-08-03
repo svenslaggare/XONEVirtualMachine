@@ -210,18 +210,24 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         var funcToCall = this.virtualMachine.Binder.GetFunction(signature);
 
-                        //Set the function arguments
-                        this.callingConvetions.CallFunctionArguments(compilationData, funcToCall);
-
                         //Align the stack
                         int stackAlignment = this.callingConvetions.CalculateStackAlignment(
                             compilationData,
                             funcToCall.Parameters);
 
-                        RawAssembler.SubConstantFromRegister(
-                            generatedCode,
-                            Register.SP,
-                            stackAlignment);
+                        if (stackAlignment > 0)
+                        {
+                            RawAssembler.SubConstantFromRegister(
+                                generatedCode,
+                                Register.SP,
+                                stackAlignment);
+                        }
+
+                        //Set the function arguments
+                        this.callingConvetions.CallFunctionArguments(compilationData, funcToCall);
+
+                        //Reserve 32 bytes for called function to spill registers
+                        RawAssembler.SubByteFromRegister(generatedCode, Register.SP, 32);
 
                         //Generate the call
                         if (funcToCall.IsManaged)
@@ -243,7 +249,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         RawAssembler.AddConstantToRegister(
                             generatedCode,
                             Register.SP,
-                            stackAlignment);
+                            stackAlignment + 32);
 
                         //Hande the return value
                         this.callingConvetions.HandleReturnValue(compilationData, funcToCall);

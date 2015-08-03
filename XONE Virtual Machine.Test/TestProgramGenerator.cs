@@ -340,5 +340,65 @@ namespace XONE_Virtual_Machine.Test
 
             return new Function(def, instructions, new List<VMType>() { intType });
         }
+
+        /// <summary>
+        /// Creates a main function that calls the add function with the given number of arguments
+        /// </summary>
+        /// <param name="container">The container</param>
+        /// <param name="numArgs">The number of arguments</param>
+        public static Function AddMainFunction(Win64Container container, int numArgs)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var parameters = new List<VMType>();
+            for (int i = 0; i < numArgs; i++)
+            {
+                parameters.Add(intType);
+            }
+
+            var instructions = new List<Instruction>();
+
+            for (int i = 1; i <= numArgs; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadInt, i));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Call, "add", parameters));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Creates a add function with that takes the given amount of arguments
+        /// </summary>
+        /// <param name="container">The container</param>
+        /// <param name="numArgs">The number of arguments</param>
+        public static Function AddFunction(Win64Container container, int numArgs)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var parameters = new List<VMType>();
+            for (int i = 0; i < numArgs; i++)
+            {
+                parameters.Add(intType);
+            }
+
+            var def = new FunctionDefinition("add", parameters, intType);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+
+            for (int i = 1; i < numArgs; i++)
+            {
+                instructions.Add(new Instruction(OpCodes.LoadArgument, i));
+                instructions.Add(new Instruction(OpCodes.AddInt));
+            }
+
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
     }
 }

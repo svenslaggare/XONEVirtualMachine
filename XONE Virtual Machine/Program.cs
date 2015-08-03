@@ -39,7 +39,7 @@ namespace XONEVirtualMachine
         /// </summary>
         /// <param name="container">The container</param>
         /// <param name="numArgs">The number of arguments</param>
-        private static Function CreateAddFunction(Win64Container container, int numArgs)
+        private static Function CreateAddFunction(Win64Container container, int numArgs, bool optimize = false)
         {
             var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
 
@@ -56,7 +56,10 @@ namespace XONEVirtualMachine
 
             instructions.Add(new Instruction(OpCodes.Ret));
 
-            return new Function(def, instructions, new List<VMType>());
+            return new Function(def, instructions, new List<VMType>())
+            {
+                Optimize = optimize
+            };
         }
 
         /// <summary>
@@ -161,6 +164,43 @@ namespace XONEVirtualMachine
             };
         }
 
+        /// <summary>
+        /// Creates a loop call add function
+        /// </summary>
+        private static Function CreateLoopCallAdd(Win64Container container, int count, bool optimize = false)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, count));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Call, "add", Enumerable.Repeat(intType, 2).ToList()));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 1));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.BranchGreaterThan, 2));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>() { intType, intType })
+            {
+                Optimize = optimize
+            };
+        }
+
         static void Main(string[] args)
         {
             using (var container = new Win64Container())
@@ -168,7 +208,10 @@ namespace XONEVirtualMachine
                 bool optimize = true;
                 //var assembly = Assembly.SingleFunction(CreateSumFunction(container, 100, 1000000, optimize));
                 //var assembly = Assembly.SingleFunction(CreateSumFunction2(container, 10, optimize));
-                var assembly = Assembly.SingleFunction(CreateProductFunction(container, 10, optimize));
+                //var assembly = Assembly.SingleFunction(CreateProductFunction(container, 10, optimize));
+                var assembly = new Assembly(
+                    CreateAddFunction(container, 2, optimize),
+                    CreateLoopCallAdd(container, 20000000, optimize));
 
                 container.LoadAssembly(assembly);
                 container.VirtualMachine.Compile();

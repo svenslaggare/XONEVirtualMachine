@@ -183,6 +183,25 @@ namespace XONEVirtualMachine.Compiler.Win64
             this.HasOffset = true;
             this.Offset = offset;
         }
+
+        public override string ToString()
+        {
+            if (this.HasOffset)
+            {
+                if (this.Offset > 0)
+                {
+                    return $"[{this.Register}+{this.Offset}]";
+                }
+                else
+                {
+                    return $"[{this.Register}{this.Offset}]";
+                }
+            }
+            else
+            {
+                return $"[{this.Register}]";
+            }
+        }
     }
 
     /// <summary>
@@ -684,6 +703,15 @@ namespace XONEVirtualMachine.Compiler.Win64
                 register,
                 RawAssembler.PopRegister,
                 RawAssembler.PopRegister);
+        }
+
+        /// <summary>
+        /// Pops the top operand
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        public static void Pop(IList<byte> generatedCode)
+        {
+            RawAssembler.AddByteToReg(generatedCode, Register.SP, RawAssembler.RegisterSize);
         }
     }
 }

@@ -57,6 +57,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         public RegisterAllocation RegisterAllocation { get; }
 
         /// <summary>
+        /// The virtual assembler
+        /// </summary>
+        public VirtualAssembler VirtualAssembler { get; }
+
+        /// <summary>
         /// Creates new compilation data
         /// </summary>
         /// <param name="virtualMachine">The virtual macine</param>
@@ -74,11 +79,13 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 this.LocalVirtualRegisters = new ReadOnlyCollection<int>(localRegs);
 
-                int numRegs = virtualMachine.Settings.GetSetting<int>("NumAllocatedRegisters") ?? 7;
+                int numRegs = virtualMachine.Settings.GetSetting<int>("NumIntRegisters") ?? 7;
 
                 this.RegisterAllocation = LinearScanRegisterAllocation.Allocate(
                     LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
                         VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))), numRegs);
+
+                this.VirtualAssembler = new VirtualAssembler(this);
             }
         }
     }
