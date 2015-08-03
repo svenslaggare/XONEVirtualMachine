@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using XONEVirtualMachine;
 using XONEVirtualMachine.Core;
@@ -29,6 +30,31 @@ namespace XONE_Virtual_Machine.Test.Programs
 
                     container.VirtualMachine.LoadAssembly(assembly);
                     Assert.AreEqual(i * (1 + i) / 2, container.Execute());
+                }
+            }
+        }
+
+        private delegate float FloatMain();
+
+        /// <summary>
+        /// Tests float arguments
+        /// </summary>
+        [TestMethod]
+        public void TestFloatArguments()
+        {
+            for (int i = 16; i <= 16; i++)
+            {
+                using (var container = new Win64Container())
+                {
+                    var assembly = new Assembly(
+                        TestProgramGenerator.FloatAddMainFunction(container, i),
+                        TestProgramGenerator.FloatAddFunction(container, i));
+
+                    container.VirtualMachine.LoadAssembly(assembly);
+                    container.VirtualMachine.Compile();
+                    var funcPtr = Marshal.GetDelegateForFunctionPointer<FloatMain>(
+                        container.VirtualMachine.Binder.GetFunction("floatmain()").EntryPoint);
+                    Assert.AreEqual(i * (1 + i) / 2, funcPtr());
                 }
             }
         }
