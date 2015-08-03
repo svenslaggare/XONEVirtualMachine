@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using XONEVirtualMachine.Compiler.Win64;
 using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine
@@ -220,6 +221,12 @@ namespace XONEVirtualMachine
                 stopwatch.Start();
                 int returnValue = container.VirtualMachine.GetEntryPoint()();
                 var elapsed = stopwatch.Elapsed;
+
+                //foreach (var function in assembly.Functions)
+                //{
+                //    Console.WriteLine(function + ":");
+                //    Console.WriteLine(Disassembler.Disassemble(function.GeneratedCode));
+                //}
 
                 Console.WriteLine(returnValue);
                 Console.WriteLine(elapsed.TotalMilliseconds);

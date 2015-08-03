@@ -67,13 +67,5 @@ namespace XONEVirtualMachine.Core
         {
             return this.Definition.ToString();
         }
-
-        /// <summary>
-        /// Returns the disassembled version of the generated code
-        /// </summary>
-        public string GetDisassembledCode()
-        {
-            return string.Join(", ", this.GeneratedCode);
-        }
     }
 }

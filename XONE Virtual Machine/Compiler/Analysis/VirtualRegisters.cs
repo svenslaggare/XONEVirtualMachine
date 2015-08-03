@@ -84,7 +84,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions, out IList<int> localRegisters)
         {
             var virtualInstructions = new List<VirtualInstruction>();
-            localRegisters = new List<int>();
+            var localRegs = new HashSet<int>();
 
             int virtualRegister = 0;
             int numStackRegisters = 0;
@@ -179,8 +179,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 }
 
                 virtualInstructions[local] = instruction;
-                localRegisters.Add(localRegister);
+                localRegs.Add(localRegister);
             }
+
+            localRegisters = localRegs.ToList();
 
             return virtualInstructions;
         }

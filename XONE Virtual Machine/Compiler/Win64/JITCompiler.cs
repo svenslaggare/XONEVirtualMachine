@@ -119,7 +119,6 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 this.ResolveCallTargets(function);
                 this.ResolveBranches(function);
-                var code = function.Function.GetDisassembledCode();
                 NativeHelpers.CopyTo(
                     function.Function.Definition.EntryPoint,
                     function.Function.GeneratedCode);
