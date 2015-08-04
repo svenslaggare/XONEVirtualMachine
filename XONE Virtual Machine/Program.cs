@@ -165,7 +165,7 @@ namespace XONEVirtualMachine
         {
             using (var container = new Win64Container())
             {
-                //container.VirtualMachine.Settings["NumIntRegisters"] = 2;
+                //container.VirtualMachine.Settings["NumIntRegisters"] = 0;
                 bool optimize = true;
                 //var assembly = new Assembly(
                 //    CreateAddFunction(container, 2, optimize),
@@ -173,11 +173,7 @@ namespace XONEVirtualMachine
 
                 var assembly = new Assembly(
                     CreateFibFunction(container, optimize),
-                    CreateMainFunction(container, "fib", 35, optimize));
-
-                //var assembly = new Assembly(
-                //    CreateSumFunction(container, optimize),
-                //    CreateMainFunction(container, "sum", 100, optimize));
+                    CreateMainFunction(container, "fib", 40, optimize));
 
                 container.LoadAssembly(assembly);
                 container.VirtualMachine.Compile();

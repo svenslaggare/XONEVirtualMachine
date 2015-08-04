@@ -168,9 +168,28 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Compares by end point
         /// </summary>
-        private static int CompareByEndPoint(LiveInterval x, LiveInterval y)
+
+        /// <summary>
+        /// Compares by end point
+        /// </summary>
+        private class CompareByEndPoint : IComparer<LiveInterval>
         {
-            return x.End.CompareTo(y.End);
+            public int Compare(LiveInterval x, LiveInterval y)
+            {
+                int compare = x.End.CompareTo(y.End);
+
+                if (compare == 0)
+                {
+                    compare = x.Start.CompareTo(y.Start);
+
+                    if (compare == 0)
+                    {
+                        return x.VirtualRegister.CompareTo(y.VirtualRegister);
+                    }
+                }
+
+                return compare;
+            }
         }
 
         /// <summary>
@@ -195,7 +214,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
             }
 
             var freeRegisters = new SortedSet<int>(Enumerable.Range(0, numRegisters));
-            var active = new List<LiveInterval>();
+            var active = new SortedSet<LiveInterval>(new CompareByEndPoint());
             liveIntervals = liveIntervals.OrderBy(x => x.Start).ToList();
 
             foreach (var interval in liveIntervals)
@@ -212,7 +231,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     freeRegisters.Remove(freeReg);
                     allocatedRegisteres.Add(interval, freeReg);
                     active.Add(interval);
-                    active.Sort(CompareByEndPoint);
                 }
             }
 
@@ -228,7 +246,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="currentInterval">The current intervals</param>
         private static void ExplireOldIntervals(
             IDictionary<LiveInterval, int> allocatedRegisteres,
-            List<LiveInterval> active,
+            ISet<LiveInterval> active,
             ISet<int> freeRegisters,
             LiveInterval currentInterval)
         {
@@ -261,7 +279,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         private static void SplitAtInterval(
             IDictionary<LiveInterval, int> allocatedRegisteres,
             IList<LiveInterval> spilledRegisters,
-            List<LiveInterval> active,
+            ISet<LiveInterval> active,
             LiveInterval currentInterval)
         {
             var spill = active.Last();
@@ -275,7 +293,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
 
                 active.Remove(spill);
                 active.Add(currentInterval);
-                active.Sort(CompareByEndPoint);
             }
             else
             {
