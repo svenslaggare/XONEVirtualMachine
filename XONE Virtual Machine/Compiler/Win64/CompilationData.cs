@@ -12,32 +12,12 @@ namespace XONEVirtualMachine.Compiler.Win64
     /// <summary>
     /// Holds compilation data
     /// </summary>
-    public class CompilationData
+    public class CompilationData : AbstractCompilationData
     {
-        /// <summary>
-        /// The function
-        /// </summary>
-        public Function Function { get; }
-
         /// <summary>
         /// The operand stack
         /// </summary>
         public OperandStack OperandStack { get; }
-
-        /// <summary>
-        /// Mapping from instruction number to native instruction offset
-        /// </summary>
-        public IList<int> InstructionMapping { get; } = new List<int>();
-
-        /// <summary>
-        /// The unresolved function calls
-        /// </summary>
-        public IList<UnresolvedFunctionCall> UnresolvedFunctionCalls { get; } = new List<UnresolvedFunctionCall>();
-
-        /// <summary>
-        /// The unresolved branches
-        /// </summary>
-        public IDictionary<int, UnresolvedBranchTarget> UnresolvedBranches { get; } = new Dictionary<int, UnresolvedBranchTarget>();
 
         /// <summary>
         /// The virtual instructions
@@ -67,8 +47,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="virtualMachine">The virtual macine</param>
         /// <param name="function">The function</param>
         public CompilationData(VirtualMachine virtualMachine, Function function)
+            : base(function)
         {
-            this.Function = function;
             this.OperandStack = new OperandStack(function);
 
             if (function.Optimize)

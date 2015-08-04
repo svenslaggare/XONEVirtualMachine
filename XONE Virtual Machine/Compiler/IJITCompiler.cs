@@ -18,6 +18,13 @@ namespace XONEVirtualMachine.Compiler
     public interface IJITCompiler : IDisposable
     {
         /// <summary>
+        /// Returns the compilation data for the given function
+        /// </summary>
+        /// <param name="function">The function</param>
+        /// <returns>The data or null if not compiled</returns>
+        AbstractCompilationData GetCompilationData(Function function);
+
+        /// <summary>
         /// Compiles the given function
         /// </summary>
         /// <param name="function">The function to compile</param>

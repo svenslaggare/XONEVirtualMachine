@@ -17,7 +17,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         private readonly CodeGenerator codeGen;
         private readonly OptimizedCodeGenerator optimizedCodeGen;
         private readonly MemoryManager memoryManager = new MemoryManager();
-        private readonly IList<CompilationData> compiledFunctions = new List<CompilationData>();
+        private readonly IDictionary<Function, CompilationData> compiledFunctions = new Dictionary<Function, CompilationData>();
 
         /// <summary>
         /// Creates a new compiler
@@ -31,6 +31,22 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Returns the compilation data for the given function
+        /// </summary>
+        /// <param name="function">The function</param>
+        /// <returns>The data or null if not compiled</returns>
+        public AbstractCompilationData GetCompilationData(Function function)
+        {
+            CompilationData compilationData;
+            if (this.compiledFunctions.TryGetValue(function, out compilationData))
+            {
+                return compilationData;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Compiles the given function
         /// </summary>
         /// <param name="function">The function to compile</param>
@@ -39,7 +55,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             //Compile the function
             var compilationData = new CompilationData(this.virtualMachine, function);
-            this.compiledFunctions.Add(compilationData);
+            this.compiledFunctions.Add(function, compilationData);
            
             if (function.Optimize)
             {
@@ -115,7 +131,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         private void ResolveSymbols()
         {
-            foreach (var function in this.compiledFunctions)
+            foreach (var function in this.compiledFunctions.Values)
             {
                 this.ResolveCallTargets(function);
                 this.ResolveBranches(function);

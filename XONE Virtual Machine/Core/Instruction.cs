@@ -43,6 +43,7 @@ namespace XONEVirtualMachine.Core
 	public struct Instruction
 	{
         private readonly string stringRepresentation;
+        private readonly string disassembledInstruction;
 
         /// <summary>
         /// Returns the op.code
@@ -69,6 +70,40 @@ namespace XONEVirtualMachine.Core
         /// </summary>
         public IReadOnlyList<VMType> Parameters { get; }
 
+        private readonly static IReadOnlyDictionary<OpCodes, string> opCodeNames;
+
+        static Instruction()
+        {
+            var opCodeNames = new Dictionary<OpCodes, string>()
+            {
+                { OpCodes.Pop, "pop" },
+                { OpCodes.AddInt, "addint" },
+                { OpCodes.SubInt, "subint" },
+                { OpCodes.MulInt, "mulint" },
+                { OpCodes.DivInt, "divint" },
+                { OpCodes.AddFloat, "addfloat" },
+                { OpCodes.SubFloat, "subfloat" },
+                { OpCodes.MulFloat, "mulfloat" },
+                { OpCodes.DivFloat, "divfloat" },
+                { OpCodes.LoadInt, "ldint" },
+                { OpCodes.LoadFloat, "ldfloat" },
+                { OpCodes.StoreLocal, "stloc" },
+                { OpCodes.LoadLocal, "ldloc" },
+                { OpCodes.LoadArgument, "ldarg" },
+                { OpCodes.Call, "call" },
+                { OpCodes.Ret, "ret"  },
+                { OpCodes.Branch, "br" },
+                { OpCodes.BranchEqual, "beq" },
+                { OpCodes.BranchNotEqual, "bne" },
+                { OpCodes.BranchGreaterThan, "bgt" },
+                { OpCodes.BranchGreaterOrEqual, "bge" },
+                { OpCodes.BranchLessThan, "blt"  },
+                { OpCodes.BranchLessOrEqual, "ble" }
+            };
+
+            Instruction.opCodeNames = new ReadOnlyDictionary<OpCodes, string>(opCodeNames);
+        }
+
         /// <summary>
         /// Creates a new instruction
         /// </summary>
@@ -81,6 +116,7 @@ namespace XONEVirtualMachine.Core
             this.StringValue = null;
             this.Parameters = null;
             this.stringRepresentation = $"OpCode: {opCode}";
+            this.disassembledInstruction = opCodeNames[opCode].ToUpper();
         }
 
 		/// <summary>
@@ -96,6 +132,7 @@ namespace XONEVirtualMachine.Core
             this.StringValue = null;
             this.Parameters = null;
             this.stringRepresentation = $"OpCode: {opCode}, IntValue: {value}";
+            this.disassembledInstruction = $"{opCodeNames[opCode].ToUpper()} {value}";
         }
 
         /// <summary>
@@ -111,6 +148,7 @@ namespace XONEVirtualMachine.Core
             this.StringValue = null;
             this.Parameters = null;
             this.stringRepresentation = $"OpCode: {opCode}, FloatValue: {value}";
+            this.disassembledInstruction = $"{opCodeNames[opCode].ToUpper()} {value}";
         }
 
         /// <summary>
@@ -126,6 +164,7 @@ namespace XONEVirtualMachine.Core
             this.StringValue = value;
             this.Parameters = null;
             this.stringRepresentation = $"OpCode: {opCode}, StringValue: {value}";
+            this.disassembledInstruction = $"{opCodeNames[opCode].ToUpper()} \"{value}\"";
         }
 
         /// <summary>
@@ -142,11 +181,20 @@ namespace XONEVirtualMachine.Core
             this.StringValue = value;
             this.Parameters = new ReadOnlyCollection<VMType>(parameters);
             this.stringRepresentation = $"OpCode: {opCode}, StringValue: {value}, Parameters: {string.Join(" ", parameters)}";
+            this.disassembledInstruction = $"{opCodeNames[opCode].ToUpper()} {value}({string.Join(" ", parameters)})";
         }
 
         public override string ToString()
         {
             return this.stringRepresentation;
+        }
+
+        /// <summary>
+        /// Disassembles the current instruction
+        /// </summary>
+        public string Disassemble()
+        {
+            return this.disassembledInstruction;
         }
     }
 

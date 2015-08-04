@@ -205,6 +205,20 @@ namespace XONEVirtualMachine.Compiler.Win64
     }
 
     /// <summary>
+    /// The jump condition
+    /// </summary>
+    public enum JumpCondition
+    {
+        Always,
+        Equal,
+        NotEqual,
+        LessThan,
+        LessThanOrEqual,
+        GreaterThan,
+        GreaterThanOrEqual
+    }
+
+    /// <summary>
     /// Represents an assembler
     /// </summary>
     public static class Assembler
@@ -712,6 +726,69 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void Pop(IList<byte> generatedCode)
         {
             RawAssembler.AddByteToReg(generatedCode, Register.SP, RawAssembler.RegisterSize);
+        }
+
+        /// <summary>
+        /// Jumps to the given target
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="condition">The jump condition</param>
+        /// <param name="target">The target relative to the end of the generated instruction.</param>
+        /// <param name="unsignedComparison">Indicates if to use an unsigned comparison</param>
+        public static void Jump(IList<byte> generatedCode, JumpCondition condition, int target, bool unsignedComparison = false)
+        {
+            switch (condition)
+            {
+                case JumpCondition.Always:
+                    RawAssembler.Jump(generatedCode, target);
+                    break;
+                case JumpCondition.Equal:
+                    RawAssembler.JumpEqual(generatedCode, target);
+                    break;
+                case JumpCondition.NotEqual:
+                    RawAssembler.JumpNotEqual(generatedCode, target);
+                    break;
+                case JumpCondition.LessThan:
+                    if (unsignedComparison)
+                    {
+                        RawAssembler.JumpLessThanUnsigned(generatedCode, target);
+                    }
+                    else
+                    {
+                        RawAssembler.JumpLessThan(generatedCode, target);
+                    }
+                    break;
+                case JumpCondition.LessThanOrEqual:
+                    if (unsignedComparison)
+                    {
+                        RawAssembler.JumpLessThanOrEqualUnsigned(generatedCode, target);
+                    }
+                    else
+                    {
+                        RawAssembler.JumpLessThanOrEqual(generatedCode, target);
+                    }
+                    break;
+                case JumpCondition.GreaterThan:
+                    if (unsignedComparison)
+                    {
+                        RawAssembler.JumpGreaterThanUnsigned(generatedCode, target);
+                    }
+                    else
+                    {
+                        RawAssembler.JumpGreaterThan(generatedCode, target);
+                    }
+                    break;
+                case JumpCondition.GreaterThanOrEqual:
+                    if (unsignedComparison)
+                    {
+                        RawAssembler.JumpGreaterThanOrEqualUnsigned(generatedCode, target);
+                    }
+                    else
+                    {
+                        RawAssembler.JumpGreaterThanOrEqual(generatedCode, target);
+                    }
+                    break;
+            }
         }
     }
 }

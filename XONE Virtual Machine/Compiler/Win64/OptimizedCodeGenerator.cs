@@ -311,7 +311,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             aliveRegistersStack,
                             funcToCall);
 
-                        //Reserve 32 bytes for called function to spill registers
+                        //Reserve 32 bytes for the called function to spill registers
                         RawAssembler.SubByteFromRegister(generatedCode, Register.SP, 32);
 
                         //Generate the call
@@ -419,7 +419,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     break;
                 case OpCodes.Branch:
-                    RawAssembler.Jump(generatedCode, 0); //jmp <target>
+                    Assembler.Jump(generatedCode, JumpCondition.Always, 0);
 
                     compilationData.UnresolvedBranches.Add(
                         generatedCode.Count - 5,
@@ -446,55 +446,30 @@ namespace XONEVirtualMachine.Compiler.Win64
                             Assembler.Compare,
                             Assembler.Compare);
 
+                        JumpCondition condition = JumpCondition.Always;
                         switch (instruction.OpCode)
                         {
                             case OpCodes.BranchEqual:
-                                RawAssembler.JumpEqual(generatedCode, 0); // je <target>
+                                condition = JumpCondition.Equal;
                                 break;
                             case OpCodes.BranchNotEqual:
-                                RawAssembler.JumpNotEqual(generatedCode, 0); // jne <target>
+                                condition = JumpCondition.NotEqual;
                                 break;
                             case OpCodes.BranchGreaterThan:
-                                if (unsignedComparison)
-                                {
-                                    RawAssembler.JumpGreaterThanUnsigned(generatedCode, 0); // jg <target>
-                                }
-                                else
-                                {
-                                    RawAssembler.JumpGreaterThan(generatedCode, 0); // jg <target>
-                                }
+                                condition = JumpCondition.GreaterThan;
                                 break;
                             case OpCodes.BranchGreaterOrEqual:
-                                if (unsignedComparison)
-                                {
-                                    RawAssembler.JumpGreaterThanOrEqualUnsigned(generatedCode, 0); // jge <target>
-                                }
-                                else
-                                {
-                                    RawAssembler.JumpGreaterThanOrEqual(generatedCode, 0); // jge <target>
-                                }
+                                condition = JumpCondition.GreaterThanOrEqual;
                                 break;
                             case OpCodes.BranchLessThan:
-                                if (unsignedComparison)
-                                {
-                                    RawAssembler.JumpLessThanUnsigned(generatedCode, 0); // jl <target>
-                                }
-                                else
-                                {
-                                    RawAssembler.JumpLessThan(generatedCode, 0); // jl <target>
-                                }
+                                condition = JumpCondition.LessThan;
                                 break;
                             case OpCodes.BranchLessOrEqual:
-                                if (unsignedComparison)
-                                {
-                                    RawAssembler.JumpLessThanOrEqualUnsigned(generatedCode, 0); // jle <target>
-                                }
-                                else
-                                {
-                                    RawAssembler.JumpLessThanOrEqual(generatedCode, 0); // jle <target>
-                                }
+                                condition = JumpCondition.LessThanOrEqual;
                                 break;
                         }
+
+                        Assembler.Jump(generatedCode, condition, 0, unsignedComparison);
 
                         compilationData.UnresolvedBranches.Add(
                             generatedCode.Count - 6,
