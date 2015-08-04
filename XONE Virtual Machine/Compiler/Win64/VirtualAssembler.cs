@@ -21,6 +21,8 @@ namespace XONEVirtualMachine.Compiler.Win64
     public class VirtualAssembler
     {
         private readonly CompilationData compilationData;
+        private readonly bool needSpillRegister = false;
+
         private IntRegister[] intRegisters = new IntRegister[]
         {
             new IntRegister(Register.AX),
@@ -39,6 +41,17 @@ namespace XONEVirtualMachine.Compiler.Win64
         public VirtualAssembler(CompilationData compilationData)
         {
             this.compilationData = compilationData;
+            this.needSpillRegister = 
+                compilationData.RegisterAllocation.NumSpilledRegisters > 0 
+                || compilationData.Function.Instructions.Any(x => x.OpCode == Core.OpCodes.DivInt);
+        }
+
+        /// <summary>
+        /// Determines if the spill register is needed
+        /// </summary>
+        public bool NeedSpillRegister
+        {
+            get { return this.needSpillRegister; }
         }
 
         /// <summary>
@@ -130,6 +143,31 @@ namespace XONEVirtualMachine.Compiler.Win64
         public int CalculateStackOffset(int stackIndex)
         {
             return -RawAssembler.RegisterSize * (1 + this.compilationData.Function.Definition.Parameters.Count + stackIndex);
+        }
+
+
+        /// <summary>
+        /// Generates code for an instruction with a virtual register source
+        /// </summary>
+        /// <param name="sourceRegister">The source register</param>
+        public void GenerateOneRegisterInstruction(int sourceRegister,
+            Action<IList<byte>, IntRegister> inst1,
+            Action<IList<byte>, MemoryOperand> inst2)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+            int? opStack = compilationData.RegisterAllocation.GetStackIndex(sourceRegister);
+
+            if (!opStack.HasValue)
+            {
+                var opReg = this.GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                inst1(generatedCode, opReg);
+            }
+            else
+            {
+                var opStackOffset = CalculateStackOffset(opStack.Value);
+                inst2(generatedCode, new MemoryOperand(Register.BP, opStackOffset));
+            }
         }
 
         /// <summary>
@@ -264,7 +302,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination</param>
         /// <param name="sourceRegister">The source register</param>
         /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
-        public void GenerateOneInstructionMemoryDestinationInstruction(MemoryOperand destination, int sourceRegister,
+        public void GenerateOneRegisterMemoryDestinationInstruction(MemoryOperand destination, int sourceRegister,
             Action<IList<byte>, IntRegister, MemoryOperand> inst1,
             Action<IList<byte>, MemoryOperand, IntRegister> inst2,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
@@ -291,7 +329,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destinationRegister">The destination</param>
         /// <param name="source">The source</param>
         /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
-        public void GenerateOneInstructionMemorySourceInstruction(int destinationRegister, MemoryOperand source,
+        public void GenerateOneRegisterMemorySourceInstruction(int destinationRegister, MemoryOperand source,
             Action<IList<byte>, IntRegister, MemoryOperand> inst1,
             Action<IList<byte>, MemoryOperand, IntRegister> inst2,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)

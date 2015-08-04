@@ -88,7 +88,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
 
-            if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
+            if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
                 Assembler.Push(function.GeneratedCode, this.GetSpillRegister());
             }
@@ -145,7 +145,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             var generatedCode = compilationData.Function.GeneratedCode;
 
-            if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
+            if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
                 Assembler.Pop(generatedCode, this.GetSpillRegister());
             }
@@ -205,6 +205,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var op2Reg = GetUseRegister(0);
                         var op1Reg = GetUseRegister(1);
                         var storeReg = GetAssignRegister();
+                        bool moveOp1ToStore = true;
 
                         switch (instruction.OpCode)
                         {
@@ -241,27 +242,108 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     multRegisterToMemoryRegisterWithOffset,
                                     MemoryRewrite.MemoryOnRight);
                                 break;
-                                //case OpCodes.DivInt:
-                                //    if (op1Reg.BaseRegister != Registers.AX)
-                                //    {
-                                //        throw new InvalidOperationException("Internal limitation: RAX only supported as destination of division.");
-                                //    }
+                            case OpCodes.DivInt:
+                                {
+                                    moveOp1ToStore = false;
 
-                                //    //This sign extends the rax register
-                                //    generatedCode.Add(0x99); //cdq
+                                    //The idiv instruction modifies the rdx and rax instruction, so we save them.
+                                    var op1Register = virtualAssembler.GetRegisterForVirtual(op1Reg);
 
-                                //    GenerateTwoRegistersInstruction(
-                                //        generatedCode,
-                                //        op1Reg,
-                                //        op2Reg,
-                                //        (gen, x, y) => Assembler.DivRegisterFromRegister(gen, x, y),
-                                //        null,
-                                //        Assembler.DivRegisterFromRegister,
-                                //        null);
-                                //    break;
+                                    IList<IntRegister> saveRegisters = null;
+
+                                    if (op1Register.HasValue && op1Register == Register.AX)
+                                    {
+                                        saveRegisters = virtualAssembler.GetAliveRegisters(index)
+                                           .Where(x => x == new IntRegister(Register.DX))
+                                           .ToList();
+                                    }
+                                    else
+                                    {
+                                        saveRegisters = virtualAssembler.GetAliveRegisters(index)
+                                           .Where(x => x == new IntRegister(Register.AX) || x == new IntRegister(Register.DX))
+                                           .ToList();
+                                    }
+
+                                    foreach (var register in saveRegisters)
+                                    {
+                                        Assembler.Push(generatedCode, register);
+                                    }
+
+                                    //Move the first operand to rax
+                                    virtualAssembler.GenerateTwoRegisterFixedDestinationInstruction(
+                                        Register.AX,
+                                        op1Reg,
+                                        Assembler.Move,
+                                        Assembler.Move,
+                                        true);
+
+                                    //Move the second operand to the spill register.
+                                    //Not moving to a spill register will cause div by zero if the second operand is in the rdx register.
+                                    var spillReg = virtualAssembler.GetSpillRegister();
+                                    var op2Register = virtualAssembler.GetRegisterForVirtual(op2Reg);
+                                    bool needSpill = false;
+
+                                    if (op2Register.HasValue && op2Register.Value == Register.DX)
+                                    {
+                                        needSpill = true;
+                                        virtualAssembler.GenerateTwoRegisterFixedDestinationInstruction(
+                                            spillReg,
+                                            op2Reg,
+                                            Assembler.Move,
+                                            Assembler.Move);
+                                    }
+
+                                    //This sign extends the rax register
+                                    generatedCode.Add(0x48);
+                                    generatedCode.Add(0x99);
+
+                                    //Divide the register
+                                    if (needSpill)
+                                    {
+                                        Assembler.Div(generatedCode, spillReg);
+                                    }
+                                    else
+                                    {
+                                        virtualAssembler.GenerateOneRegisterInstruction(
+                                            op2Reg,
+                                            Assembler.Div,
+                                            Assembler.Div);
+                                    }
+
+                                    //Move the result
+                                    virtualAssembler.GenerateTwoRegisterFixedSourceInstruction(
+                                        storeReg,
+                                        Register.AX,
+                                        Assembler.Move,
+                                        Assembler.Move,
+                                        true);
+
+                                    //Restore saved registers
+                                    var storeRegister = virtualAssembler.GetRegisterForVirtual(storeReg);
+
+                                    foreach (var register in saveRegisters.Reverse())
+                                    {
+                                        if (storeRegister.HasValue)
+                                        {
+                                            if (storeRegister != Register.AX)
+                                            {
+                                                Assembler.Pop(generatedCode, register);
+                                            }
+                                            else
+                                            {
+                                                Assembler.Pop(generatedCode);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Assembler.Pop(generatedCode, register);
+                                        }
+                                    }
+                                }
+                                break;
                         }
 
-                        if (op1Reg != storeReg)
+                        if (moveOp1ToStore && op1Reg != storeReg)
                         {
                             virtualAssembler.GenerateTwoRegistersInstruction(
                                 storeReg,
@@ -390,7 +472,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         int argOffset = (instruction.IntValue + stackOffset) * -RawAssembler.RegisterSize;
                         var storeReg = GetAssignRegister();
 
-                        virtualAssembler.GenerateOneInstructionMemorySourceInstruction(
+                        virtualAssembler.GenerateOneRegisterMemorySourceInstruction(
                             storeReg,
                             new MemoryOperand(Register.BP, argOffset),
                             Assembler.Move,

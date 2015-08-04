@@ -276,5 +276,61 @@ namespace XONE_Virtual_Machine.Test.Programs
                 Assert.AreEqual(89, container.Execute());
             }
         }
+
+        /// <summary>
+        /// Tests the div instruction
+        /// </summary>
+        [TestMethod]
+        public void TestDiv()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 0;
+
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var funcDef = new FunctionDefinition("main", new List<VMType>(), intType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadInt, 4));
+                instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+                instructions.Add(new Instruction(OpCodes.DivInt));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(4 / 2, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests the div instruction
+        /// </summary>
+        [TestMethod]
+        public void TestDiv2()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 0;
+
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var funcDef = new FunctionDefinition("main", new List<VMType>(), intType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadInt, 3));
+                instructions.Add(new Instruction(OpCodes.LoadInt, 8));
+                instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+                instructions.Add(new Instruction(OpCodes.DivInt));
+                instructions.Add(new Instruction(OpCodes.MulInt));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(12, container.Execute());
+            }
+        }
     }
 }

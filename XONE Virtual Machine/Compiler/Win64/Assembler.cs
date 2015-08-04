@@ -534,6 +534,41 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Divides the rax register with the given register. This instruction also modifies the rdx register.
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="source">The source register</param>
+        public static void Div(IList<byte> generatedCode, IntRegister source)
+        {
+            if (source.IsBase)
+            {
+                RawAssembler.DivRegisterFromRegister(generatedCode, Register.AX, source.BaseRegister);
+            }
+            else
+            {
+                RawAssembler.DivRegisterFromRegister(generatedCode, Register.AX, source.ExtendedRegister);
+            }
+        }
+
+
+        /// <summary>
+        /// Divides the rax register with the given memory operand. This instruction also modifies the rdx register.
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="source">The source operand</param>
+        public static void Div(IList<byte> generatedCode, MemoryOperand source)
+        {
+            if (source.Register.IsBase)
+            {
+                RawAssembler.DivMemoryRegisterWithOffsetFromRegister(generatedCode, Register.AX, source.Register.BaseRegister, source.Offset);
+            }
+            else
+            {
+                RawAssembler.DivMemoryRegisterWithOffsetFromRegister(generatedCode, Register.AX, source.Register.ExtendedRegister, source.Offset);
+            }
+        }
+
+        /// <summary>
         /// Moves the second register to the first register
         /// </summary>
         /// <param name="generatedCode">The generated code</param>

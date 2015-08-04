@@ -1747,6 +1747,60 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Divides the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void DivMemoryRegisterWithOffsetFromRegister(
+            IList<byte> codeGenerator,
+            Register destination,
+            Register sourceMemoryRegister, int offset)
+        {
+            if (destination != Register.AX)
+            {
+                throw new ArgumentException("Only the AX register is supported as destination.");
+            }
+
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0xf7);
+            codeGenerator.Add((byte)(0xb8 | (byte)sourceMemoryRegister | (byte)((byte)destination << 3)));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Divides the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void DivMemoryRegisterWithOffsetFromRegister(
+            IList<byte> codeGenerator,
+            Register destination,
+            ExtendedRegister sourceMemoryRegister, int offset)
+        {
+            if (destination != Register.AX)
+            {
+                throw new ArgumentException("Only the AX register is supported as destination.");
+            }
+
+            codeGenerator.Add(0x49);
+            codeGenerator.Add(0xf7);
+            codeGenerator.Add((byte)(0xb8 | (byte)sourceMemoryRegister | (byte)((byte)destination << 3)));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
         /// Divides the second register from the first
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>

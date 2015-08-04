@@ -168,10 +168,6 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Compares by end point
         /// </summary>
-
-        /// <summary>
-        /// Compares by end point
-        /// </summary>
         private class CompareByEndPoint : IComparer<LiveInterval>
         {
             public int Compare(LiveInterval x, LiveInterval y)
