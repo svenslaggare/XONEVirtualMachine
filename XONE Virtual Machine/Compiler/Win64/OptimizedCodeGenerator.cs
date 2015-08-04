@@ -298,10 +298,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         if (stackAlignment > 0)
                         {
-                            RawAssembler.SubConstantFromRegister(
-                                generatedCode,
-                                Register.SP,
-                                stackAlignment);
+                            Assembler.Sub(generatedCode, Register.SP, stackAlignment);
                         }
 
                         //Set the function arguments
@@ -312,7 +309,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             funcToCall);
 
                         //Reserve 32 bytes for the called function to spill registers
-                        RawAssembler.SubByteFromRegister(generatedCode, Register.SP, 32);
+                        Assembler.Sub(generatedCode, Register.SP, 32);
 
                         //Generate the call
                         if (funcToCall.IsManaged)
@@ -331,15 +328,18 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
 
                         //Unalign the stack
-                        RawAssembler.AddConstantToRegister(
-                            generatedCode,
-                            Register.SP,
-                            stackAlignment + 32);
+                        Assembler.Add(generatedCode, Register.SP, stackAlignment + 32);
 
                         //Hande the return value
-                        this.callingConvetions.HandleReturnValue(compilationData, funcToCall, GetAssignRegister());
+                        int returnValueReg = -1;
 
-                        var assignRegister = virtualAssembler.GetRegisterForVirtual(GetAssignRegister());
+                        if (!funcToCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
+                        {
+                            returnValueReg = GetAssignRegister();
+                        }
+
+                        this.callingConvetions.HandleReturnValue(compilationData, funcToCall, returnValueReg);
+                        var assignRegister = virtualAssembler.GetRegisterForVirtual(returnValueReg);
 
                         //Restore registers
                         foreach (var register in aliveRegisters.Reverse<IntRegister>())
@@ -367,7 +367,14 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.Ret:
                     {
                         //Handle the return value
-                        this.callingConvetions.MakeReturnValue(compilationData, GetUseRegister(0));
+                        int returnValueReg = -1;
+
+                        if (!funcDef.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
+                        {
+                            returnValueReg = GetUseRegister(0);
+                        }
+
+                        this.callingConvetions.MakeReturnValue(compilationData, returnValueReg);
 
                         //Restore the base pointer
                         this.CreateEpilog(compilationData);

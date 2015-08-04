@@ -36,7 +36,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 container.VirtualMachine.Verifier.VerifiyFunction(func);
 
-                var virtualInstructions = VirtualRegisters.Create(func.Instructions);
+                var virtualInstructions = VirtualRegisters.Create(container.VirtualMachine, func);
                 Assert.AreEqual(4, virtualInstructions.Count);
 
                 Assert.AreEqual(0, virtualInstructions[0].AssignRegister);

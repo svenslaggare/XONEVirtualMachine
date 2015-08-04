@@ -270,5 +270,45 @@ namespace XONE_Virtual_Machine.Test.Programs
                 }
             }
         }
+
+        /// <summary>
+        /// Tests function call
+        /// </summary>
+        [TestMethod]
+        public void TestCallVoid()
+        {
+            using (var container = new Win64Container())
+            {
+                var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+                var voidType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Void);
+
+                var nopFunc = new Function(
+                    new FunctionDefinition("nop", new List<VMType>(), voidType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                var mainFunc = new Function(
+                    new FunctionDefinition("main", new List<VMType>(), intType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.Call, "nop", new List<VMType>()),
+                        new Instruction(OpCodes.LoadInt, 0),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    new List<VMType>())
+                {
+                    Optimize = true
+                };
+
+                container.LoadAssembly(new Assembly(nopFunc, mainFunc));
+                Assert.AreEqual(0, container.Execute());
+            }
+        }
     }
 }

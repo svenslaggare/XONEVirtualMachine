@@ -69,20 +69,26 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// Creates the virtual registers IR for the given instructions
         /// </summary>
-        /// <param name="instructions">The instructions</param>
-        public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions)
+        /// <param name="virtualMachine">The virtual machine</param>
+        /// <param name="function">The function</param>
+        public static IList<VirtualInstruction> Create(VirtualMachine virtualMachine, Function function)
         {
             IList<int> localRegisters;
-            return Create(instructions, out localRegisters);
+            return Create(virtualMachine, function, out localRegisters);
         }
 
         /// <summary>
-        /// Creates the virtual registers IR for the given instructions
+        /// Creates the virtual registers IR for the given function
         /// </summary>
-        /// <param name="instructions">The instructions</param>
+        /// <param name="virtualMachine">The virtual machine</param>
+        /// <param name="function">The function</param>
         /// <param name="localRegisters">The local registers</param>
-        public static IList<VirtualInstruction> Create(IReadOnlyList<Instruction> instructions, out IList<int> localRegisters)
+        public static IList<VirtualInstruction> Create(
+            VirtualMachine virtualMachine,
+            Function function,
+            out IList<int> localRegisters)
         {
+            var instructions = function.Instructions;
             var virtualInstructions = new List<VirtualInstruction>();
             var localRegs = new HashSet<int>();
 
@@ -107,8 +113,13 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 switch (instruction.OpCode)
                 {
                     case OpCodes.Pop:
-                    case OpCodes.Ret:
                         usesRegisters.Add(UseRegister());
+                        break;
+                    case OpCodes.Ret:
+                        if (!function.Definition.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
+                        {
+                            usesRegisters.Add(UseRegister());
+                        }
                         break;
                     case OpCodes.AddInt:
                     case OpCodes.SubInt:
@@ -127,9 +138,18 @@ namespace XONEVirtualMachine.Compiler.Analysis
                         {
                             usesRegisters.Add(UseRegister());
                         }
-                        assignRegister = AssignRegister();
+
+                        var toCall = virtualMachine.Binder.GetFunction(
+                            virtualMachine.Binder.FunctionSignature(instruction.StringValue, instruction.Parameters));
+
+                        if (!toCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
+                        {
+                            assignRegister = AssignRegister();
+                        }
                         break;
                     case OpCodes.LoadArgument:
+                        assignRegister = AssignRegister();
+                        break;
                     case OpCodes.LoadInt:
                     case OpCodes.LoadFloat:
                         assignRegister = AssignRegister();
@@ -157,7 +177,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 i++;
             }
 
-            //After all stack operands has been assigned to virtual registers, assign the locals to virtual registers.
+            //Assign the locals to virtual registers.
             foreach (var local in localInstructions)
             {
                 var instruction = virtualInstructions[local];

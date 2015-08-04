@@ -1163,7 +1163,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             else
             {
                 codeGenerator.Add(0x81);
-                codeGenerator.Add((byte)(0xc1 | (byte)destReg));
+                codeGenerator.Add((byte)(0xc0 | (byte)destReg));
             }
 
             foreach (var component in BitConverter.GetBytes(sourceValue))

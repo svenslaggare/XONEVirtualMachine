@@ -31,48 +31,12 @@ namespace XONEVirtualMachine.Compiler
         /// <param name="source">The source</param>
         /// <param name="startIndex">The start index</param>
         /// <param name="value">The value</param>
-        public static unsafe void SetInt(IntPtr source, int startIndex, int value)
-        {
-            byte* sourcePtr = (byte*)source.ToPointer();
-
-            int index = startIndex;
-            foreach (var component in BitConverter.GetBytes(value))
-            {
-                sourcePtr[index] = component;
-                index++;
-            }
-        }
-
-        /// <summary>
-        /// Sets the int in the given byte vector starting at the given index
-        /// </summary>
-        /// <param name="source">The source</param>
-        /// <param name="startIndex">The start index</param>
-        /// <param name="value">The value</param>
         public static void SetInt(IList<byte> source, int startIndex, int value)
         {
             int index = startIndex;
             foreach (var component in BitConverter.GetBytes(value))
             {
                 source[index] = component;
-                index++;
-            }
-        }
-
-        /// <summary>
-        /// Sets the long in the given byte vector starting at the given index
-        /// </summary>
-        /// <param name="source">The source</param>
-        /// <param name="startIndex">The start index</param>
-        /// <param name="value">The value</param>
-        public static unsafe void SetLong(IntPtr source, int startIndex, long value)
-        {
-            byte* sourcePtr = (byte*)source.ToPointer();
-
-            int index = startIndex;
-            foreach (var component in BitConverter.GetBytes(value))
-            {
-                sourcePtr[index] = component;
                 index++;
             }
         }

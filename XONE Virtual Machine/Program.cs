@@ -222,13 +222,13 @@ namespace XONEVirtualMachine
                 int returnValue = container.VirtualMachine.GetEntryPoint()();
                 var elapsed = stopwatch.Elapsed;
 
-                foreach (var function in assembly.Functions)
-                {
-                    var disassembler = new Disassembler(
-                        container.VirtualMachine.Compiler.GetCompilationData(function),
-                        x => new Compiler.Win64.Disassembler(x));
-                    Console.WriteLine(disassembler.Disassemble());
-                }
+                //foreach (var function in assembly.Functions)
+                //{
+                //    var disassembler = new Disassembler(
+                //        container.VirtualMachine.Compiler.GetCompilationData(function),
+                //        x => new Compiler.Win64.Disassembler(x));
+                //    Console.WriteLine(disassembler.Disassemble());
+                //}
 
                 Console.WriteLine(returnValue);
                 Console.WriteLine(elapsed.TotalMilliseconds);
