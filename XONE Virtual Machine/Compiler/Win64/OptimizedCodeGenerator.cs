@@ -54,20 +54,13 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Returns the spill register
-        /// </summary>
-        private IntRegister GetSpillRegister()
-        {
-            return new IntRegister(ExtendedRegister.R12);
-        }
-
-        /// <summary>
         /// Creates the function prolog
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         private void CreateProlog(CompilationData compilationData)
         {
             var function = compilationData.Function;
+            var virtualAssembler = compilationData.VirtualAssembler;
 
             //Calculate the size of the stack aligned to 16 bytes
             var def = function.Definition;
@@ -83,14 +76,17 @@ namespace XONEVirtualMachine.Compiler.Win64
             Assembler.Move(function.GeneratedCode, Register.BP, Register.SP);
 
             //Make room for the variables on the stack
-            Assembler.Sub(function.GeneratedCode, Register.SP, stackSize);
+            if (stackSize > 0)
+            {
+                Assembler.Sub(function.GeneratedCode, Register.SP, stackSize);
+            }
 
             //Move the arguments to the stack
             this.callingConvetions.MoveArgumentsToStack(compilationData);
 
             if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
-                Assembler.Push(function.GeneratedCode, this.GetSpillRegister());
+                Assembler.Push(function.GeneratedCode, virtualAssembler.GetSpillRegister());
             }
 
             //Zero locals
@@ -103,6 +99,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="compilationData">The compilation data</param>
         private void ZeroLocals(CompilationData compilationData)
         {
+            var virtualAssembler = compilationData.VirtualAssembler;
             var func = compilationData.Function;
 
             if (func.Locals.Count > 0)
@@ -110,7 +107,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
                 {
                     //Zero the spill register
-                    var spillReg = this.GetSpillRegister();
+                    var spillReg = virtualAssembler.GetSpillRegister();
                     Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
                 }
 
@@ -126,7 +123,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     else
                     {
-                        var spillReg = this.GetSpillRegister();
+                        var spillReg = virtualAssembler.GetSpillRegister();
                         int stackOffset =
                             -RawAssembler.RegisterSize
                             * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
@@ -144,10 +141,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         private void CreateEpilog(CompilationData compilationData)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
+            var virtualAssembler = compilationData.VirtualAssembler;
 
             if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
-                Assembler.Pop(generatedCode, this.GetSpillRegister());
+                Assembler.Pop(generatedCode, virtualAssembler.GetSpillRegister());
             }
 
             //Restore the base pointer
@@ -228,7 +226,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             case OpCodes.MulInt:
                                 Action<IList<byte>, MemoryOperand, IntRegister> multRegisterToMemoryRegisterWithOffset = (gen, destMem, src) =>
                                 {
-                                    var spillReg = GetSpillRegister();
+                                    var spillReg = virtualAssembler.GetSpillRegister();
                                     Assembler.Move(gen, spillReg, destMem);
                                     Assembler.Mult(gen, spillReg, src);
                                     Assembler.Move(gen, destMem, spillReg);
