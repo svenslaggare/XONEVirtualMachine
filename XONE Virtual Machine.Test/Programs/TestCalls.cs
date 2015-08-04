@@ -254,5 +254,39 @@ namespace XONE_Virtual_Machine.Test.Programs
                 Assert.AreEqual(3, container.Execute());
             }
         }
+
+        /// <summary>
+        /// Tests a recursive function
+        /// </summary>
+        [TestMethod]
+        public void TestRecursive1()
+        {
+            using (var container = new Win64Container())
+            {
+                var assembly = new Assembly(
+                    TestProgramGenerator.MainWithIntCall(container, "sum", 10),
+                    TestProgramGenerator.ResursiveSum(container));
+
+                container.LoadAssembly(assembly);
+                Assert.AreEqual(55, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests a recursive function
+        /// </summary>
+        [TestMethod]
+        public void TestRecursive2()
+        {
+            using (var container = new Win64Container())
+            {
+                var assembly = new Assembly(
+                    TestProgramGenerator.MainWithIntCall(container, "fib", 11),
+                    TestProgramGenerator.RecursiveFib(container));
+
+                container.LoadAssembly(assembly);
+                Assert.AreEqual(89, container.Execute());
+            }
+        }
     }
 }

@@ -68,6 +68,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 * RawAssembler.RegisterSize;
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
+            compilationData.StackSize = stackSize;
 
             //Save the base pointer
             RawAssembler.PushRegister(function.GeneratedCode, Register.BP); //push rbp

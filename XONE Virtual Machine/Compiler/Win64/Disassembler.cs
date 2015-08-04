@@ -81,6 +81,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 }
 
                 output.AppendLine(this.disassembler.CompleteInstr);
+                //output.AppendLine("0x" + this.disassembler.EIP.ToString("X") + " " + this.disassembler.CompleteInstr);
                 offset += result;
             }
         }

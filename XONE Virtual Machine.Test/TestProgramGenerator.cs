@@ -460,5 +460,82 @@ namespace XONE_Virtual_Machine.Test
 
             return new Function(def, instructions, new List<VMType>());
         }
+
+        /// <summary>
+        ///  Creates a recursive fibonacci function
+        /// </summary>
+        public static Function RecursiveFib(Win64Container container)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("fib", Enumerable.Repeat(intType, 1).ToList(), intType);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.BranchGreaterThan, 5));
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 2));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.Call, "fib", Enumerable.Repeat(intType, 1).ToList()));
+
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.Call, "fib", Enumerable.Repeat(intType, 1).ToList()));
+
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Creates a recursive sum function
+        /// </summary>
+        public static Function ResursiveSum(Win64Container container)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("sum", Enumerable.Repeat(intType, 1).ToList(), intType);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.BranchNotEqual, 5));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 0));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.LoadInt, 1));
+            instructions.Add(new Instruction(OpCodes.SubInt));
+            instructions.Add(new Instruction(OpCodes.Call, "sum", Enumerable.Repeat(intType, 1).ToList()));
+
+            instructions.Add(new Instruction(OpCodes.LoadArgument, 0));
+            instructions.Add(new Instruction(OpCodes.AddInt));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
+
+        /// <summary>
+        /// Creates the main function that invokes the given int function
+        /// </summary>
+        public static Function MainWithIntCall(Win64Container container, string toCall, int n)
+        {
+            var intType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+
+            var def = new FunctionDefinition("main", new List<VMType>(), intType);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadInt, n));
+            instructions.Add(new Instruction(OpCodes.Call, toCall, Enumerable.Repeat(intType, 1).ToList()));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(def, instructions, new List<VMType>());
+        }
     }
 }

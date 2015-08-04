@@ -76,6 +76,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 * (def.Parameters.Count + compilationData.RegisterAllocation.NumSpilledRegisters);
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
+            compilationData.StackSize = stackSize;
 
             //Save the base pointer
             Assembler.Push(function.GeneratedCode, Register.BP);

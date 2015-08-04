@@ -21,6 +21,16 @@ namespace XONEVirtualMachine.Compiler.Win64
     public class VirtualAssembler
     {
         private readonly CompilationData compilationData;
+        private IntRegister[] intRegisters = new IntRegister[]
+        {
+            new IntRegister(Register.AX),
+            new IntRegister(Register.CX),
+            new IntRegister(Register.DX),
+            new IntRegister(ExtendedRegister.R8),
+            new IntRegister(ExtendedRegister.R9),
+            new IntRegister(ExtendedRegister.R10),
+            new IntRegister(ExtendedRegister.R11)
+        };
 
         /// <summary>
         /// Creates a new virtual assembler
@@ -45,33 +55,9 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="register">The register</param>
         public IntRegister GetRegister(int register)
         {
-            if (register == 0)
+            if (register >= 0 && register < this.intRegisters.Length)
             {
-                return new IntRegister(Register.AX);
-            }
-            else if (register == 1)
-            {
-                return new IntRegister(Register.CX);
-            }
-            else if (register == 2)
-            {
-                return new IntRegister(Register.DX);
-            }
-            else if (register == 3)
-            {
-                return new IntRegister(ExtendedRegister.R8);
-            }
-            else if (register == 4)
-            {
-                return new IntRegister(ExtendedRegister.R9);
-            }
-            else if (register == 5)
-            {
-                return new IntRegister(ExtendedRegister.R10);
-            }
-            else if (register == 6)
-            {
-                return new IntRegister(ExtendedRegister.R11);
+                return this.intRegisters[register];
             }
 
             throw new InvalidOperationException("The given register is not valid.");

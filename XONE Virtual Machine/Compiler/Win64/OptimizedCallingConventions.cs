@@ -217,11 +217,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             int thisNumArgs = compilationData.Function.Definition.Parameters.Count;
             int numArgs = toCall.Parameters.Count;
 
-            int argsStart = 1 + thisNumArgs + regAlloc.NumSpilledRegisters;
+            int argsStart = 1 + compilationData.StackSize / RawAssembler.RegisterSize;
 
             if (regAlloc.NumSpilledRegisters > 0)
             {
-                argsStart += 1 + (aliveRegistersStack.Count + CalculateStackArguments(toCall.Parameters)) % 2;
+                argsStart += 1;
             }
 
             int alignment = this.CalculateStackAlignment(compilationData, toCall.Parameters, aliveRegistersStack.Count);

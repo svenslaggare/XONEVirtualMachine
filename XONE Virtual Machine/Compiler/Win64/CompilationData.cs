@@ -15,6 +15,11 @@ namespace XONEVirtualMachine.Compiler.Win64
     public class CompilationData : AbstractCompilationData
     {
         /// <summary>
+        /// The size of the stack
+        /// </summary>
+        public int StackSize { get; set; }
+
+        /// <summary>
         /// The operand stack
         /// </summary>
         public OperandStack OperandStack { get; }
