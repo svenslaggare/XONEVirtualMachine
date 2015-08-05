@@ -24,7 +24,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         private readonly CompilationData compilationData;
         private readonly bool needSpillRegister = false;
 
-        private IntRegister[] intRegisters = new IntRegister[]
+        private readonly IntRegister[] intRegisters = new IntRegister[]
         {
             new IntRegister(Register.AX),
             new IntRegister(Register.CX),
@@ -35,7 +35,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             new IntRegister(ExtendedRegister.R11)
         };
 
-        private FloatRegister[] floatRegisters = new FloatRegister[]
+        private readonly FloatRegister[] floatRegisters = new FloatRegister[]
         {
             FloatRegister.XMM0,
             FloatRegister.XMM1,
@@ -52,8 +52,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         public VirtualAssembler(CompilationData compilationData)
         {
             this.compilationData = compilationData;
-            this.needSpillRegister = 
-                compilationData.RegisterAllocation.NumSpilledRegisters > 0 
+            this.needSpillRegister =
+                compilationData.RegisterAllocation.Spilled.Keys.Any(x => x.Type == VirtualRegisterType.Integer)
                 || compilationData.Function.Instructions.Any(x => x.OpCode == Core.OpCodes.DivInt);
         }
 

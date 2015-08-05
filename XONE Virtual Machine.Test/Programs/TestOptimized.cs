@@ -93,6 +93,61 @@ namespace XONE_Virtual_Machine.Test.Programs
             }
         }
 
+        private delegate float FloatMain();
+
+        /// <summary>
+        /// Tests default values for float locals
+        /// </summary>
+        [TestMethod]
+        public void TestFloatDefaultValue()
+        {
+            using (var container = new Win64Container())
+            {
+                var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+                var voidType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Void);
+
+                var localLoad = new Function(
+                    new FunctionDefinition("localLoad", new List<VMType>(), floatType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadLocal, 0),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    Enumerable.Repeat(floatType, 1).ToList());
+                localLoad.Optimize = true;
+
+                var localStore = new Function(
+                    new FunctionDefinition("localStore", new List<VMType>(), voidType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.LoadFloat, 5.0f),
+                        new Instruction(OpCodes.StoreLocal, 0),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    Enumerable.Repeat(floatType, 1).ToList());
+                localStore.Optimize = true;
+
+                var mainFunc = new Function(
+                    new FunctionDefinition("floatMain", new List<VMType>(), floatType),
+                    new List<Instruction>()
+                    {
+                        new Instruction(OpCodes.Call, "localStore", new List<VMType>()),
+                        new Instruction(OpCodes.Call, "localLoad", new List<VMType>()),
+                        new Instruction(OpCodes.Ret)
+                    },
+                    Enumerable.Repeat(floatType, 1).ToList());
+                mainFunc.Optimize = true;
+
+                container.LoadAssembly(new Assembly(localLoad, localStore, mainFunc));
+
+                container.VirtualMachine.Compile();
+                var entryPoint = Marshal.GetDelegateForFunctionPointer<FloatMain>(
+                    container.VirtualMachine.Binder.GetFunction("floatMain()").EntryPoint);
+
+                Assert.AreEqual(0.0f, entryPoint());
+            }
+        }
+
         /// <summary>
         /// Tests a function with a loop
         /// </summary>

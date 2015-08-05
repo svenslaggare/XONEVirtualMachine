@@ -35,10 +35,10 @@ namespace XONEVirtualMachine.Core
             var voidType = virtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Void);
 
             virtualMachine.Binder.Define(FunctionDefinition.NewExternal<FuncVoidArgInt>(
-              "std.println",
-              new List<VMType>() { intType },
-              voidType,
-              Println));
+                "std.println",
+                new List<VMType>() { intType },
+                voidType,
+                Println));
         }
     }
 }

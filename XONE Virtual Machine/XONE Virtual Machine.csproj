@@ -75,6 +75,7 @@
     <Compile Include="Compiler\Analysis\ControlFlowGraph.cs" />
     <Compile Include="Compiler\Analysis\LinearScanRegisterAllocation.cs" />
     <Compile Include="Compiler\Analysis\LivenessAnalysis.cs" />
+    <Compile Include="Compiler\Analysis\RegisterAllocation.cs" />
     <Compile Include="Compiler\Analysis\VirtualRegisters.cs" />
     <Compile Include="Compiler\Disassembler.cs" />
     <Compile Include="Compiler\INativeDisassembler.cs" />

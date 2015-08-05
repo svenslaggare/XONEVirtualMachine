@@ -175,7 +175,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             int argsStart = 1 + compilationData.StackSize / RawAssembler.RegisterSize;
 
-            if (regAlloc.NumSpilledRegisters > 0)
+            if (virtualAssembler.NeedSpillRegister)
             {
                 argsStart += 1;
             }
@@ -185,7 +185,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             var virtualReg = argumentRegisters[numArgs - 1 - argumentIndex];
             var virtualRegStack = regAlloc.GetStackIndex(virtualReg);
 
-            //Check if to pass argument by via stack
+            //Check if to pass argument by via the stack
             if (argumentIndex >= numRegisterArguments)
             {
                 //Move arguments to the stack

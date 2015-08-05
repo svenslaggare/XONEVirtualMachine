@@ -22,6 +22,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The operand stack
         /// </summary>
+        /// <remarks>Only has value if the function is not optimized.</remarks>
         public OperandStack OperandStack { get; }
 
         /// <summary>
@@ -33,6 +34,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The virtual registers for locals
         /// </summary>
+        /// <remarks>Only has value if the function is optimized.</remarks>
         public IReadOnlyList<VirtualRegister> LocalVirtualRegisters { get; }
 
         /// <summary>
@@ -44,6 +46,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The virtual assembler
         /// </summary>
+        /// <remarks>Only has value if the function is optimized.</remarks>
         public VirtualAssembler VirtualAssembler { get; }
 
         /// <summary>

@@ -104,7 +104,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (func.Locals.Count > 0)
             {
-                if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
+                if (virtualAssembler.NeedSpillRegister)
                 {
                     //Zero the spill register
                     var spillReg = virtualAssembler.GetIntSpillRegister();
@@ -113,13 +113,20 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 foreach (var localRegister in compilationData.LocalVirtualRegisters)
                 {
-                    var reg = compilationData.RegisterAllocation.GetRegister(localRegister);
+                    //Zero the local register
+                    var localReg = virtualAssembler.GetRegisterForVirtual(localRegister);
 
-                    if (reg.HasValue)
+                    if (localReg.HasValue)
                     {
-                        //Zero the local register
-                        var localReg = compilationData.VirtualAssembler.GetIntRegister(reg.Value);
-                        Assembler.Xor(func.GeneratedCode, localReg, localReg);
+                        if (localReg.Value.IsInt)
+                        {
+                            Assembler.Xor(func.GeneratedCode, localReg.Value.IntRegister, localReg.Value.IntRegister);
+                        }
+                        else
+                        {
+                            Assembler.Push(func.GeneratedCode, 0);
+                            Assembler.Pop(func.GeneratedCode, localReg.Value.FloatRegister);
+                        }
                     }
                     else
                     {
