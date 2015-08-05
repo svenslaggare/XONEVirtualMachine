@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using XONEVirtualMachine;
@@ -536,6 +537,28 @@ namespace XONE_Virtual_Machine.Test
             instructions.Add(new Instruction(OpCodes.Ret));
 
             return new Function(def, instructions, new List<VMType>());
+        }
+
+        delegate float FloatEntryPoint();
+
+        /// <summary>
+        /// Executes a program that has an entry point that returns a float
+        /// </summary>
+        public static float ExecuteFloatProgram(Win64Container container, string entryPointName = "floatMain", string saveFileName = "")
+        {
+            container.VirtualMachine.Compile();
+
+            if (saveFileName != "")
+            {
+                TestHelpers.SaveDisassembledFunctions(container, saveFileName);
+            }
+
+            var entryPoint = container.VirtualMachine.Binder.GetFunction(entryPointName + "()");
+            var programPtr = (FloatEntryPoint)Marshal.GetDelegateForFunctionPointer(
+                entryPoint.EntryPoint,
+                typeof(FloatEntryPoint));
+
+            return programPtr();
         }
     }
 }

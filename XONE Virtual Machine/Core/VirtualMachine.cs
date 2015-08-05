@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -65,6 +66,14 @@ namespace XONEVirtualMachine.Core
             return (EntryPoint)Marshal.GetDelegateForFunctionPointer(
                 entryPoint.EntryPoint,
                 typeof(EntryPoint));
+        }
+
+        /// <summary>
+        /// Returns the loaded assemblies
+        /// </summary>
+        public IReadOnlyList<Assembly> LoadedAssemblies
+        {
+            get { return new ReadOnlyCollection<Assembly>(this.loadedAssemblies); }
         }
 
         /// <summary>

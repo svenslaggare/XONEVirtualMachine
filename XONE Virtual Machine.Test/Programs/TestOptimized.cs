@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using XONEVirtualMachine;
 using XONEVirtualMachine.Compiler.Analysis;
@@ -402,6 +403,122 @@ namespace XONE_Virtual_Machine.Test.Programs
                 func.Optimize = true;
                 container.LoadAssembly(Assembly.SingleFunction(func));
                 Assert.AreEqual(12, container.Execute());
+            }
+        }
+
+        /// <summary>
+        /// Tests a simple float program
+        /// </summary>
+        [TestMethod]
+        public void TestFloat()
+        {
+            using (var container = new Win64Container())
+            {
+                var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 2.5f));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(2.5f, TestProgramGenerator.ExecuteFloatProgram(container), 1E-4);
+            }
+        }
+
+        /// <summary>
+        /// Tests the float add instruction
+        /// </summary>
+        [TestMethod]
+        public void TestFloatAdd()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 5;
+
+                var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 2.5f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 1.35f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 4.5f));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(2.5f + 1.35f + 4.5f, TestProgramGenerator.ExecuteFloatProgram(container), 1E-4);
+            }
+        }
+
+        /// <summary>
+        /// Tests the float add instruction
+        /// </summary>
+        [TestMethod]
+        public void TestFloatAdd2()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 5;
+
+                var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 1f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 2f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 3f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 4f));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(1 + 2 + 3 + 4, TestProgramGenerator.ExecuteFloatProgram(container), 1E-4);
+            }
+        }
+
+        /// <summary>
+        /// Tests the float add instruction
+        /// </summary>
+        [TestMethod]
+        public void TestFloatAdd3()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 5;
+
+                var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+                var funcDef = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
+
+                var instructions = new List<Instruction>();
+
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 1f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 2f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 3f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 4f));
+                instructions.Add(new Instruction(OpCodes.LoadFloat, 5f));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.AddFloat));
+                instructions.Add(new Instruction(OpCodes.Ret));
+
+                var func = new Function(funcDef, instructions, new List<VMType>());
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(1 + 2 + 3 + 4 + 5, TestProgramGenerator.ExecuteFloatProgram(container), 1E-4);
             }
         }
     }

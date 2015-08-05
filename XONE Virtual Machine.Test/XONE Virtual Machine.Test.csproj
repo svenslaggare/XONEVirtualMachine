@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Analysis\TestControlFlowGraphs.cs" />
     <Compile Include="Programs\TestSpilled.cs" />
+    <Compile Include="TestHelpers.cs" />
     <Compile Include="TestProgramGenerator.cs" />
     <Compile Include="Analysis\TestVirtualRegisters.cs" />
     <Compile Include="Analysis\TestLivenessAnalysis.cs" />

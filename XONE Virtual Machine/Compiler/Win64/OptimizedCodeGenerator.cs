@@ -86,7 +86,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
-                Assembler.Push(function.GeneratedCode, virtualAssembler.GetSpillRegister());
+                Assembler.Push(function.GeneratedCode, virtualAssembler.GetIntSpillRegister());
             }
 
             //Zero locals
@@ -107,7 +107,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 if (compilationData.RegisterAllocation.NumSpilledRegisters > 0)
                 {
                     //Zero the spill register
-                    var spillReg = virtualAssembler.GetSpillRegister();
+                    var spillReg = virtualAssembler.GetIntSpillRegister();
                     Assembler.Xor(func.GeneratedCode, spillReg, spillReg);
                 }
 
@@ -118,12 +118,12 @@ namespace XONEVirtualMachine.Compiler.Win64
                     if (reg.HasValue)
                     {
                         //Zero the local register
-                        var localReg = compilationData.VirtualAssembler.GetRegister(reg.Value);
+                        var localReg = compilationData.VirtualAssembler.GetIntRegister(reg.Value);
                         Assembler.Xor(func.GeneratedCode, localReg, localReg);
                     }
                     else
                     {
-                        var spillReg = virtualAssembler.GetSpillRegister();
+                        var spillReg = virtualAssembler.GetIntSpillRegister();
                         int stackOffset =
                             -RawAssembler.RegisterSize
                             * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
@@ -145,7 +145,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (compilationData.VirtualAssembler.NeedSpillRegister)
             {
-                Assembler.Pop(generatedCode, virtualAssembler.GetSpillRegister());
+                Assembler.Pop(generatedCode, virtualAssembler.GetIntSpillRegister());
             }
 
             //Restore the base pointer
@@ -195,6 +195,25 @@ namespace XONEVirtualMachine.Compiler.Win64
                             Assembler.Move);
                     }
                     break;
+                case OpCodes.LoadFloat:
+                    {
+                        var storeReg = GetAssignRegister();
+                        var storeRegister = virtualAssembler.GetFloatRegisterForVirtual(storeReg);
+                        int floatPattern = BitConverter.ToInt32(BitConverter.GetBytes(instruction.FloatValue), 0);
+
+                        if (storeRegister.HasValue)
+                        {
+                            Assembler.Push(generatedCode, floatPattern);
+                            Assembler.Pop(generatedCode, storeRegister.Value);
+                        }
+                        else
+                        {
+                            int storeStack = compilationData.RegisterAllocation.GetStackIndex(storeReg).Value;
+                            var storeStackOffset = virtualAssembler.CalculateStackOffset(storeStack);
+                            Assembler.Move(generatedCode, new MemoryOperand(Register.BP, storeStackOffset), floatPattern);
+                        }
+                    }
+                    break;
                 case OpCodes.AddInt:
                 case OpCodes.SubInt:
                 case OpCodes.MulInt:
@@ -226,7 +245,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             case OpCodes.MulInt:
                                 Action<IList<byte>, MemoryOperand, IntRegister> multRegisterToMemoryRegisterWithOffset = (gen, destMem, src) =>
                                 {
-                                    var spillReg = virtualAssembler.GetSpillRegister();
+                                    var spillReg = virtualAssembler.GetIntSpillRegister();
                                     Assembler.Move(gen, spillReg, destMem);
                                     Assembler.Mult(gen, spillReg, src);
                                     Assembler.Move(gen, destMem, spillReg);
@@ -245,7 +264,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     moveOp1ToStore = false;
 
                                     //The idiv instruction modifies the rdx and rax instruction, so we save them.
-                                    var op1Register = virtualAssembler.GetRegisterForVirtual(op1Reg);
+                                    var op1Register = virtualAssembler.GetIntRegisterForVirtual(op1Reg);
 
                                     IList<IntRegister> saveRegisters = null;
 
@@ -277,8 +296,8 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                                     //Move the second operand to the spill register.
                                     //Not moving to a spill register will cause div by zero if the second operand is in the rdx register.
-                                    var spillReg = virtualAssembler.GetSpillRegister();
-                                    var op2Register = virtualAssembler.GetRegisterForVirtual(op2Reg);
+                                    var spillReg = virtualAssembler.GetIntSpillRegister();
+                                    var op2Register = virtualAssembler.GetIntRegisterForVirtual(op2Reg);
                                     bool needSpill = false;
 
                                     if (op2Register.HasValue && op2Register.Value == Register.DX)
@@ -317,7 +336,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                                         true);
 
                                     //Restore saved registers
-                                    var storeRegister = virtualAssembler.GetRegisterForVirtual(storeReg);
+                                    var storeRegister = virtualAssembler.GetIntRegisterForVirtual(storeReg);
 
                                     foreach (var register in saveRegisters.Reverse())
                                     {
@@ -344,6 +363,37 @@ namespace XONEVirtualMachine.Compiler.Win64
                         if (moveOp1ToStore && op1Reg != storeReg)
                         {
                             virtualAssembler.GenerateTwoRegistersInstruction(
+                                storeReg,
+                                op1Reg,
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
+                        }
+                    }
+                    break;
+                case OpCodes.AddFloat:
+                case OpCodes.SubFloat:
+                case OpCodes.MulFloat:
+                case OpCodes.DivFloat:
+                    {
+                        var op2Reg = GetUseRegister(0);
+                        var op1Reg = GetUseRegister(1);
+                        var storeReg = GetAssignRegister();
+
+                        switch (instruction.OpCode)
+                        {
+                            case OpCodes.AddFloat:
+                                virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                    op1Reg,
+                                    op2Reg,
+                                    Assembler.Add,
+                                    Assembler.Add);
+                                break;
+                        }
+
+                        if (op1Reg != storeReg)
+                        {
+                            virtualAssembler.GenerateTwoRegistersFloatInstruction(
                                 storeReg,
                                 op1Reg,
                                 Assembler.Move,
@@ -420,7 +470,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
 
                         this.callingConvetions.HandleReturnValue(compilationData, funcToCall, returnValueReg);
-                        var assignRegister = virtualAssembler.GetRegisterForVirtual(returnValueReg);
+                        var assignRegister = virtualAssembler.GetIntRegisterForVirtual(returnValueReg);
 
                         //Restore registers
                         foreach (var register in aliveRegisters.Reverse<IntRegister>())

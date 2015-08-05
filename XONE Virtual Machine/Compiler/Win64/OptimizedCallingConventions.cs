@@ -234,7 +234,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (argumentIndex >= numRegisterArguments)
             {
                 //Move arguments to the stack
-                var spillReg = virtualAssembler.GetSpillRegister();
+                var spillReg = virtualAssembler.GetIntSpillRegister();
                 var argMemory = new MemoryOperand();
 
                 if (virtualRegStack.HasValue)
@@ -247,7 +247,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     argMemory = new MemoryOperand(
                         Register.BP,
-                        -(argsStart + aliveRegistersStack[virtualAssembler.GetRegisterForVirtual(virtualReg).Value])
+                        -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
                         * RawAssembler.RegisterSize);
                 }
 
@@ -275,7 +275,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     {
                         argMemory = new MemoryOperand(
                             Register.BP,
-                            -(argsStart + aliveRegistersStack[virtualAssembler.GetRegisterForVirtual(virtualReg).Value])
+                            -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
                             * RawAssembler.RegisterSize);
                     }
 
@@ -328,7 +328,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 if (def.ReturnType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-
+                    virtualAssembler.GenerateTwoRegisterFixedDestinationInstruction(
+                       FloatRegister.XMM0,
+                       returnValueRegister,
+                       Assembler.Move,
+                       Assembler.Move);
                 }
                 else
                 {

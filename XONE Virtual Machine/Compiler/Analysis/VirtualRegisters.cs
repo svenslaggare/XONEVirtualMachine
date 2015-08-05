@@ -102,6 +102,22 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public static VirtualRegister Invalid => new VirtualRegister(VirtualRegisterType.Integer, -1);
 
         /// <summary>
+        /// Returns the virtual register type for the given VM type
+        /// </summary>
+        /// <param name="type">The VM type</param>
+        public static VirtualRegisterType FromType(VMType type)
+        {
+            if (type.IsPrimitiveType(PrimitiveTypes.Float))
+            {
+                return VirtualRegisterType.Float;
+            }
+            else
+            {
+                return VirtualRegisterType.Integer;
+            }
+        }
+
+        /// <summary>
         /// Returns a string representation of the virtual register
         public override string ToString()
         {
@@ -201,12 +217,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
 
             int virtualRegister = 0;
             int numStackRegisters = 0;
-            Func<VirtualRegister> UseRegister = () => new VirtualRegister(VirtualRegisterType.Integer, --virtualRegister);
-            Func<VirtualRegister> AssignRegister = () =>
+            Func<VirtualRegisterType, VirtualRegister> UseRegister = (VirtualRegisterType type)
+                => new VirtualRegister(type, --virtualRegister);
+
+            Func<VirtualRegisterType, VirtualRegister> AssignRegister = (VirtualRegisterType type) =>
             {
                 int reg = virtualRegister++;
                 numStackRegisters = Math.Max(virtualRegister, numStackRegisters);
-                return new VirtualRegister(VirtualRegisterType.Integer, reg);
+                return new VirtualRegister(type, reg);
             };
 
             var localInstructions = new List<int>();
@@ -220,30 +238,35 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 switch (instruction.OpCode)
                 {
                     case OpCodes.Pop:
-                        usesRegisters.Add(UseRegister());
+                        usesRegisters.Add(UseRegister(VirtualRegisterType.Integer));
                         break;
                     case OpCodes.Ret:
                         if (!function.Definition.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
                         {
-                            usesRegisters.Add(UseRegister());
+                            usesRegisters.Add(UseRegister(VirtualRegister.FromType(function.Definition.ReturnType)));
                         }
                         break;
                     case OpCodes.AddInt:
                     case OpCodes.SubInt:
                     case OpCodes.MulInt:
                     case OpCodes.DivInt:
+                        usesRegisters.Add(UseRegister(VirtualRegisterType.Integer));
+                        usesRegisters.Add(UseRegister(VirtualRegisterType.Integer));
+                        assignRegister = AssignRegister(VirtualRegisterType.Integer);
+                        break;
                     case OpCodes.AddFloat:
                     case OpCodes.SubFloat:
                     case OpCodes.MulFloat:
                     case OpCodes.DivFloat:
-                        usesRegisters.Add(UseRegister());
-                        usesRegisters.Add(UseRegister());
-                        assignRegister = AssignRegister();
+                        usesRegisters.Add(UseRegister(VirtualRegisterType.Float));
+                        usesRegisters.Add(UseRegister(VirtualRegisterType.Float));
+                        assignRegister = AssignRegister(VirtualRegisterType.Float);
                         break;
                     case OpCodes.Call:
-                        for (int arg = 0; arg < instruction.Parameters.Count; arg++)
+                        for (int arg = instruction.Parameters.Count - 1; arg >= 0; arg--)
                         {
-                            usesRegisters.Add(UseRegister());
+                            var argType = instruction.Parameters[arg];
+                            usesRegisters.Add(UseRegister(VirtualRegister.FromType(argType)));
                         }
 
                         var toCall = virtualMachine.Binder.GetFunction(
@@ -251,15 +274,20 @@ namespace XONEVirtualMachine.Compiler.Analysis
 
                         if (!toCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
                         {
-                            assignRegister = AssignRegister();
+                            assignRegister = AssignRegister(VirtualRegister.FromType(toCall.ReturnType));
                         }
                         break;
                     case OpCodes.LoadArgument:
-                        assignRegister = AssignRegister();
+                        {
+                            var argType = function.Definition.Parameters[instruction.IntValue];
+                            assignRegister = AssignRegister(VirtualRegister.FromType(argType));
+                        }
                         break;
                     case OpCodes.LoadInt:
+                        assignRegister = AssignRegister(VirtualRegisterType.Integer);
+                        break;
                     case OpCodes.LoadFloat:
-                        assignRegister = AssignRegister();
+                        assignRegister = AssignRegister(VirtualRegisterType.Float);
                         break;
                     case OpCodes.BranchEqual:
                     case OpCodes.BranchNotEqual:
@@ -267,16 +295,25 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     case OpCodes.BranchGreaterOrEqual:
                     case OpCodes.BranchLessThan:
                     case OpCodes.BranchLessOrEqual:
-                        usesRegisters.Add(UseRegister());
-                        usesRegisters.Add(UseRegister());
+                        {
+                            var compareType = VirtualRegisterType.Integer;
+                            usesRegisters.Add(UseRegister(compareType));
+                            usesRegisters.Add(UseRegister(compareType));
+                        }
                         break;
                     case OpCodes.LoadLocal:
-                        assignRegister = AssignRegister();
-                        localInstructions.Add(i);
+                        {
+                            var localType = function.Locals[instruction.IntValue];
+                            assignRegister = AssignRegister(VirtualRegister.FromType(localType));
+                            localInstructions.Add(i);
+                        }
                         break;
                     case OpCodes.StoreLocal:
-                        usesRegisters.Add(UseRegister());
-                        localInstructions.Add(i);
+                        {
+                            var localType = function.Locals[instruction.IntValue];
+                            usesRegisters.Add(UseRegister(VirtualRegister.FromType(localType)));
+                            localInstructions.Add(i);
+                        }
                         break;
                 }
 
@@ -288,8 +325,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
             foreach (var local in localInstructions)
             {
                 var instruction = virtualInstructions[local];
+                var localType = function.Locals[instruction.Instruction.IntValue];
+
                 var localRegister = new VirtualRegister(
-                    VirtualRegisterType.Integer,
+                    VirtualRegister.FromType(localType),
                     numStackRegisters + instruction.Instruction.IntValue);
 
                 if (instruction.Instruction.OpCode == OpCodes.LoadLocal)

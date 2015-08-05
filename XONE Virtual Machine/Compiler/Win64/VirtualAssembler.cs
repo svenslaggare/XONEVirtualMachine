@@ -35,6 +35,16 @@ namespace XONEVirtualMachine.Compiler.Win64
             new IntRegister(ExtendedRegister.R11)
         };
 
+        private FloatRegister[] floatRegisters = new FloatRegister[]
+        {
+            FloatRegister.XMM0,
+            FloatRegister.XMM1,
+            FloatRegister.XMM2,
+            FloatRegister.XMM3,
+            FloatRegister.XMM4,
+            FloatRegister.XMM5,
+        };
+
         /// <summary>
         /// Creates a new virtual assembler
         /// </summary>
@@ -56,18 +66,26 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Returns the spill register
+        /// Returns the int spill register
         /// </summary>
-        public IntRegister GetSpillRegister()
+        public IntRegister GetIntSpillRegister()
         {
             return new IntRegister(ExtendedRegister.R12);
         }
 
         /// <summary>
-        /// Returns the register for the given allocated register
+        /// Returns the float spill register
+        /// </summary>
+        public FloatRegister GetFloatSpillRegister()
+        {
+            return FloatRegister.XMM5;
+        }
+
+        /// <summary>
+        /// Returns the int register for the given allocated register
         /// </summary>
         /// <param name="register">The register</param>
-        public IntRegister GetRegister(int register)
+        public IntRegister GetIntRegister(int register)
         {
             if (register >= 0 && register < this.intRegisters.Length)
             {
@@ -78,17 +96,60 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Returns the hardware register for the given virtual register
+        /// Returns the float register for the given allocated register
+        /// </summary>
+        /// <param name="register">The register</param>
+        public FloatRegister GetFloatRegister(int register)
+        {
+            if (register >= 0 && register < this.floatRegisters.Length)
+            {
+                return this.floatRegisters[register];
+            }
+
+            throw new InvalidOperationException("The given register is not valid.");
+        }
+
+        /// <summary>
+        /// Returns the int register for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
         /// <returns>The register or null if the register is spilled</returns>
-        public IntRegister? GetRegisterForVirtual(VirtualRegister virtualRegister)
+        public IntRegister? GetIntRegisterForVirtual(VirtualRegister virtualRegister)
         {
+            if (virtualRegister.Type != VirtualRegisterType.Integer)
+            {
+                return null;
+            }
+
             var reg = this.compilationData.RegisterAllocation.GetRegister(virtualRegister);
 
             if (reg.HasValue)
             {
-                return this.GetRegister(reg.Value);
+                return this.GetIntRegister(reg.Value);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the float register for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        /// <returns>The register or null if the register is spilled</returns>
+        public FloatRegister? GetFloatRegisterForVirtual(VirtualRegister virtualRegister)
+        {
+            if (virtualRegister.Type != VirtualRegisterType.Float)
+            {
+                return null;
+            }
+
+            var reg = this.compilationData.RegisterAllocation.GetRegister(virtualRegister);
+
+            if (reg.HasValue)
+            {
+                return this.GetFloatRegister(reg.Value);
             }
             else
             {
@@ -108,7 +169,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     return instructionIndex >= interval.Start && instructionIndex <= interval.End;
                 })
-                .Select(interval => this.GetRegisterForVirtual(interval.VirtualRegister).Value);
+                .Select(interval => this.GetIntRegisterForVirtual(interval.VirtualRegister).Value);
         }
 
         /// <summary>
@@ -122,7 +183,33 @@ namespace XONEVirtualMachine.Compiler.Win64
             Action<IList<byte>, MemoryOperand, IntRegister> inst2)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
-            var spillReg = this.GetSpillRegister();
+            var spillReg = this.GetIntSpillRegister();
+
+            if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
+            {
+                Assembler.Move(generatedCode, spillReg, source);
+                inst2(generatedCode, destination, spillReg);
+            }
+            else
+            {
+                Assembler.Move(generatedCode, spillReg, destination);
+                inst1(generatedCode, spillReg, source);
+                Assembler.Move(generatedCode, destination, spillReg);
+            }
+        }
+
+        /// <summary>
+        /// Rewrites two memory operand instructions
+        /// </summary>
+        /// <param name="memoryRewrite">The memory rewrite rule</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        private void RewriteMemory(MemoryRewrite memoryRewrite, MemoryOperand destination, MemoryOperand source,
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst1,
+            Action<IList<byte>, MemoryOperand, FloatRegister> inst2)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var spillReg = this.GetFloatSpillRegister();
 
             if (memoryRewrite == MemoryRewrite.MemoryOnLeft)
             {
@@ -146,7 +233,6 @@ namespace XONEVirtualMachine.Compiler.Win64
             return -RawAssembler.RegisterSize * (1 + this.compilationData.Function.Definition.Parameters.Count + stackIndex);
         }
 
-
         /// <summary>
         /// Generates code for an instruction with a virtual register source
         /// </summary>
@@ -161,7 +247,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var opReg = this.GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                var opReg = this.GetIntRegisterForVirtual(sourceRegister).Value;
                 inst1(generatedCode, opReg);
             }
             else
@@ -191,20 +277,120 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!op1Stack.HasValue && !op2Stack.HasValue)
             {
-                var op1Reg = GetRegister(regAlloc.GetRegister(destinationRegister) ?? 0);
-                var op2Reg = GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                var op1Reg = this.GetIntRegisterForVirtual(destinationRegister).Value;
+                var op2Reg = this.GetIntRegisterForVirtual(sourceRegister).Value;
                 inst1(generatedCode, op1Reg, op2Reg);
             }
             else if (!op1Stack.HasValue && op2Stack.HasValue)
             {
-                var op1Reg = this.GetRegister(regAlloc.GetRegister(destinationRegister) ?? 0);
+                var op1Reg = this.GetIntRegisterForVirtual(destinationRegister).Value;
                 var op2StackOffset = CalculateStackOffset(op2Stack.Value);
                 inst2(generatedCode, op1Reg, new MemoryOperand(Register.BP, op2StackOffset));
             }
             else if (op1Stack.HasValue && !op2Stack.HasValue)
             {
                 var op1StackOffset = CalculateStackOffset(op1Stack.Value);
-                var op2Reg = this.GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                var op2Reg = this.GetIntRegisterForVirtual(sourceRegister).Value;
+                inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
+            }
+            else
+            {
+                var op1StackOffset = CalculateStackOffset(op1Stack.Value);
+                var op2StackOffset = CalculateStackOffset(op2Stack.Value);
+
+                this.RewriteMemory(
+                    memoryRewrite,
+                    new MemoryOperand(Register.BP, op1StackOffset),
+                    new MemoryOperand(Register.BP, op2StackOffset),
+                    inst2,
+                    inst3);
+            }
+        }
+
+        /// <summary>
+        /// Generates code for a float instruction with two virtual registers
+        /// </summary>
+        /// <param name="destinationRegister">The destination register</param>
+        /// <param name="sourceRegister">The source register</param>
+        public void GenerateTwoRegistersFloatInstruction(VirtualRegister destinationRegister, VirtualRegister sourceRegister,
+            Action<IList<byte>, FloatRegister, FloatRegister> inst1,
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst2)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+
+            int? op1Stack = compilationData.RegisterAllocation.GetStackIndex(destinationRegister);
+            int? op2Stack = compilationData.RegisterAllocation.GetStackIndex(sourceRegister);
+
+            if (!op1Stack.HasValue && !op2Stack.HasValue)
+            {
+                var op1Reg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
+                var op2Reg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
+                inst1(generatedCode, op1Reg, op2Reg);
+            }
+            else if (!op1Stack.HasValue && op2Stack.HasValue)
+            {
+                var op1Reg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
+                var op2StackOffset = CalculateStackOffset(op2Stack.Value);
+                inst2(generatedCode, op1Reg, new MemoryOperand(Register.BP, op2StackOffset));
+            }
+            else if (op1Stack.HasValue && !op2Stack.HasValue)
+            {
+                var op1StackOffset = CalculateStackOffset(op1Stack.Value);
+                var op2Reg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
+                var spillReg = this.GetFloatSpillRegister();
+
+                inst1(generatedCode, spillReg, op2Reg);
+                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
+            }
+            else
+            {
+                var op1StackOffset = CalculateStackOffset(op1Stack.Value);
+                var op2StackOffset = CalculateStackOffset(op2Stack.Value);
+
+                this.RewriteMemory(
+                    MemoryRewrite.MemoryOnRight,
+                    new MemoryOperand(Register.BP, op1StackOffset),
+                    new MemoryOperand(Register.BP, op2StackOffset),
+                    inst2,
+                    null);
+            }
+        }
+
+        /// <summary>
+        /// Generates code for a float instruction with two virtual registers
+        /// </summary>
+        /// <param name="destinationRegister">The destination register</param>
+        /// <param name="sourceRegister">The source register</param>
+        /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
+        public void GenerateTwoRegistersFloatInstruction(VirtualRegister destinationRegister, VirtualRegister sourceRegister,
+            Action<IList<byte>, FloatRegister, FloatRegister> inst1,
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst2,
+            Action<IList<byte>, MemoryOperand, FloatRegister> inst3,
+            MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+
+            int? op1Stack = compilationData.RegisterAllocation.GetStackIndex(destinationRegister);
+            int? op2Stack = compilationData.RegisterAllocation.GetStackIndex(sourceRegister);
+
+            if (!op1Stack.HasValue && !op2Stack.HasValue)
+            {
+                var op1Reg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
+                var op2Reg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
+                inst1(generatedCode, op1Reg, op2Reg);
+            }
+            else if (!op1Stack.HasValue && op2Stack.HasValue)
+            {
+                var op1Reg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
+                var op2StackOffset = CalculateStackOffset(op2Stack.Value);
+                inst2(generatedCode, op1Reg, new MemoryOperand(Register.BP, op2StackOffset));
+            }
+            else if (op1Stack.HasValue && !op2Stack.HasValue)
+            {
+                var op1StackOffset = CalculateStackOffset(op1Stack.Value);
+                var op2Reg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
                 inst3(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
             }
             else
@@ -238,7 +424,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var opReg = this.GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                var opReg = this.GetIntRegisterForVirtual(sourceRegister).Value;
 
                 if (skipIfSame)
                 {
@@ -251,6 +437,31 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     inst1(generatedCode, destination, opReg);
                 }
+            }
+            else
+            {
+                var opStackOffset = CalculateStackOffset(opStack.Value);
+                inst2(generatedCode, destination, new MemoryOperand(Register.BP, opStackOffset));
+            }
+        }
+
+        /// <summary>
+        /// Generates code for an instruction with a fixed register destination and virtual register source
+        /// </summary>
+        /// <param name="destination">The destination</param>
+        /// <param name="sourceRegister">The source register</param>
+        public void GenerateTwoRegisterFixedDestinationInstruction(FloatRegister destination, VirtualRegister sourceRegister,
+            Action<IList<byte>, FloatRegister, FloatRegister> inst1,
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst2)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+            int? opStack = compilationData.RegisterAllocation.GetStackIndex(sourceRegister);
+
+            if (!opStack.HasValue)
+            {
+                var opReg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
+                inst1(generatedCode, destination, opReg);
             }
             else
             {
@@ -276,8 +487,8 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var opReg = this.GetRegister(regAlloc.GetRegister(destinationRegister) ?? 0);
-                
+                var opReg = this.GetIntRegisterForVirtual(destinationRegister).Value;
+
                 if (skipIfSame)
                 {
                     if (opReg != source)
@@ -314,7 +525,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var opReg = this.GetRegister(regAlloc.GetRegister(sourceRegister) ?? 0);
+                var opReg = this.GetIntRegisterForVirtual(sourceRegister).Value;
                 inst2(generatedCode, destination, opReg);
             }
             else
@@ -341,7 +552,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var destinationReg = this.GetRegister(regAlloc.GetRegister(destinationRegister) ?? 0);
+                var destinationReg = this.GetIntRegisterForVirtual(destinationRegister).Value;
                 inst1(generatedCode, destinationReg, source);
             }
             else
@@ -367,7 +578,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (!opStack.HasValue)
             {
-                var opReg = this.GetRegister(regAlloc.GetRegister(destinationRegister) ?? 0);
+                var opReg = this.GetIntRegisterForVirtual(destinationRegister).Value;
                 inst1(generatedCode, opReg, value);
             }
             else
