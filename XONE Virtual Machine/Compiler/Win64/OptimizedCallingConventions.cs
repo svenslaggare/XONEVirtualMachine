@@ -26,6 +26,14 @@ namespace XONEVirtualMachine.Compiler.Win64
             RegisterCallArguments.Argument3
         };
 
+        private readonly FloatRegister[] floatArgumentRegisters = new FloatRegister[]
+        {
+            FloatRegisterCallArguments.Argument0,
+            FloatRegisterCallArguments.Argument1,
+            FloatRegisterCallArguments.Argument2,
+            FloatRegisterCallArguments.Argument3
+        };
+
         /// <summary>
         /// Returns the stack argument index for the argument
         /// </summary>
@@ -94,57 +102,22 @@ namespace XONEVirtualMachine.Compiler.Win64
             var generatedCode = compilationData.Function.GeneratedCode;
             int argStackOffset = -(1 + argumentIndex) * RawAssembler.RegisterSize;
 
-            if (argumentIndex >= 4)
+            if (argumentIndex >= numRegisterArguments)
             {
                 int stackArgumentIndex = this.GetStackArgumentIndex(compilationData, argumentIndex);
 
-                RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
-                    generatedCode,
-                    Register.AX,
+                var argStackSource = new MemoryOperand(
                     Register.BP,
-                    RawAssembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
+                    RawAssembler.RegisterSize * (6 + stackArgumentIndex));
 
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    Register.AX); //mov [rbp+<arg offset>], rax
+                var tmpReg = compilationData.VirtualAssembler.GetFloatSpillRegister();
+                Assembler.Move(generatedCode, tmpReg, argStackSource);
+                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), tmpReg);
             }
-
-            if (argumentIndex == 3)
+            else
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    FloatRegisterCallArguments.Argument3); //movss [rbp+<arg offset>], <reg arg 3>
-            }
-
-            if (argumentIndex == 2)
-            {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    FloatRegisterCallArguments.Argument2); //movss [rbp+<arg offset>], <reg arg 2>
-            }
-
-            if (argumentIndex == 1)
-            {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    FloatRegisterCallArguments.Argument1); //movss [rbp+<arg offset>], <reg arg 1>
-            }
-
-            if (argumentIndex == 0)
-            {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    FloatRegisterCallArguments.Argument0); //movss [rbp+<arg offset>], <reg arg 0>
+                var argReg = floatArgumentRegisters[argumentIndex];
+                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), argReg);
             }
         }
 
@@ -209,7 +182,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             CompilationData compilationData,
             int argumentIndex, VMType argumentType,
             IReadOnlyList<VirtualRegister> argumentRegisters,
-            IDictionary<IntRegister, int> aliveRegistersStack,
+            IDictionary<HardwareRegister, int> aliveRegistersStack,
             FunctionDefinition toCall)
         {
             var virtualAssembler = compilationData.VirtualAssembler;
@@ -234,31 +207,73 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (argumentIndex >= numRegisterArguments)
             {
                 //Move arguments to the stack
-                var spillReg = virtualAssembler.GetIntSpillRegister();
-                var argMemory = new MemoryOperand();
-
-                if (virtualRegStack.HasValue)
+                if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-                    argMemory = new MemoryOperand(
-                        Register.BP,
-                        virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                    var spillReg = virtualAssembler.GetFloatSpillRegister();
+                    var argMemory = new MemoryOperand();
+
+                    if (virtualRegStack.HasValue)
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                    }
+                    else
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            -(argsStart + aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value])
+                            * RawAssembler.RegisterSize);
+                    }
+
+                    Assembler.Move(generatedCode, spillReg, argMemory);
+                    Assembler.Push(generatedCode, spillReg);
                 }
                 else
                 {
-                    argMemory = new MemoryOperand(
-                        Register.BP,
-                        -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
-                        * RawAssembler.RegisterSize);
-                }
+                    var spillReg = virtualAssembler.GetIntSpillRegister();
+                    var argMemory = new MemoryOperand();
 
-                Assembler.Move(generatedCode, spillReg, argMemory);
-                Assembler.Push(generatedCode, spillReg);
+                    if (virtualRegStack.HasValue)
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                    }
+                    else
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
+                            * RawAssembler.RegisterSize);
+                    }
+
+                    Assembler.Move(generatedCode, spillReg, argMemory);
+                    Assembler.Push(generatedCode, spillReg);
+                }
             }
             else
             {
                 if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
+                    var argReg = floatArgumentRegisters[argumentIndex];
+                    var argMemory = new MemoryOperand();
 
+                    if (virtualRegStack.HasValue)
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                    }
+                    else
+                    {
+                        argMemory = new MemoryOperand(
+                            Register.BP,
+                            -(argsStart + aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value])
+                            * RawAssembler.RegisterSize);
+                    }
+
+                    Assembler.Move(generatedCode, argReg, argMemory);
                 }
                 else
                 {
@@ -294,7 +309,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         public void CallFunctionArguments(
             CompilationData compilationData,
             IReadOnlyList<VirtualRegister> argumentRegisters,
-            IDictionary<IntRegister, int> aliveRegistersStack, FunctionDefinition toCall)
+            IDictionary<HardwareRegister, int> aliveRegistersStack, FunctionDefinition toCall)
         {
             for (int arg = toCall.Parameters.Count - 1; arg >= 0; arg--)
             {
@@ -371,7 +386,12 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 if (toCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-
+                    virtualAssembler.GenerateTwoRegisterFixedSourceInstruction(
+                        returnValueRegister,
+                        FloatRegister.XMM0,
+                        Assembler.Move,
+                        Assembler.Move,
+                        true);
                 }
                 else
                 {

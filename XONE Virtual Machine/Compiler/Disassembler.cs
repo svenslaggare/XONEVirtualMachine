@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 namespace XONEVirtualMachine.Compiler
 {
     /// <summary>
+    /// The disassembler options
+    /// </summary>
+    [Flags]
+    public enum DisassemblerOptions
+    {
+        None = 0,
+        NewLineAfterInstruction = 1
+    }
+
+    /// <summary>
     /// Represents a managed disassembler
     /// </summary>
     public class Disassembler
@@ -14,16 +24,22 @@ namespace XONEVirtualMachine.Compiler
         private readonly INativeDisassembler nativeDisassembler;
         private readonly AbstractCompilationData compilationData;
         private string disassembledCode = "";
+        private readonly DisassemblerOptions options;
 
         /// <summary>
         /// Creates a new managed disassembler
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="createDisassembler">Function to create the disassembler</param>
-        public Disassembler(AbstractCompilationData compilationData, Func<AbstractCompilationData, INativeDisassembler> createDisassembler)
+        /// <param name="options">The options</param>
+        public Disassembler(
+            AbstractCompilationData compilationData,
+            Func<AbstractCompilationData, INativeDisassembler> createDisassembler,
+            DisassemblerOptions options = DisassemblerOptions.None)
         {
             this.compilationData = compilationData;
             this.nativeDisassembler = createDisassembler(compilationData);
+            this.options = options;
         }
 
         /// <summary>
@@ -41,6 +57,11 @@ namespace XONEVirtualMachine.Compiler
             {
                 output.AppendLine("<prolog>");
                 this.nativeDisassembler.DisassembleBlock(0, compilationData.InstructionMapping[0], output);
+
+                if (this.options.HasFlag(DisassemblerOptions.NewLineAfterInstruction))
+                {
+                    output.AppendLine();
+                }
             }
 
             for (int i = 0; i < instructions.Count; i++)
@@ -61,6 +82,11 @@ namespace XONEVirtualMachine.Compiler
                 int size = nextStart - start;
                 output.AppendLine(instruction.Disassemble());
                 this.nativeDisassembler.DisassembleBlock(start, size, output);
+
+                if (this.options.HasFlag(DisassemblerOptions.NewLineAfterInstruction))
+                {
+                    output.AppendLine();
+                }
             }
 
             this.disassembledCode = output.ToString();

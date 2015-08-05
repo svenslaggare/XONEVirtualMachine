@@ -208,8 +208,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
                         else
                         {
-                            int storeStack = compilationData.RegisterAllocation.GetStackIndex(storeReg).Value;
-                            var storeStackOffset = virtualAssembler.CalculateStackOffset(storeStack);
+                            var storeStackOffset = virtualAssembler.CalculateStackOffset(storeReg).Value;
                             Assembler.Move(generatedCode, new MemoryOperand(Register.BP, storeStackOffset), floatPattern);
                         }
                     }
@@ -271,13 +270,15 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     if (op1Register.HasValue && op1Register == Register.AX)
                                     {
                                         saveRegisters = virtualAssembler.GetAliveRegisters(index)
-                                           .Where(x => x == new IntRegister(Register.DX))
+                                           .Where(x => x.IsInt && x.IntRegister == new IntRegister(Register.DX))
+                                           .Select(x => x.IntRegister)
                                            .ToList();
                                     }
                                     else
                                     {
                                         saveRegisters = virtualAssembler.GetAliveRegisters(index)
-                                           .Where(x => x == new IntRegister(Register.AX) || x == new IntRegister(Register.DX))
+                                           .Where(x => x.IsInt && (x == new IntRegister(Register.AX) || x == new IntRegister(Register.DX)))
+                                           .Select(x => x.IntRegister)
                                            .ToList();
                                     }
 
@@ -412,7 +413,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                         //Save registers
                         var aliveRegisters = virtualAssembler.GetAliveRegisters(index).ToList();
-                        var aliveRegistersStack = new Dictionary<IntRegister, int>();
+                        var aliveRegistersStack = new Dictionary<HardwareRegister, int>();
                         int stackIndex = 0;
 
                         foreach (var register in aliveRegisters)
@@ -470,10 +471,10 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
 
                         this.callingConvetions.HandleReturnValue(compilationData, funcToCall, returnValueReg);
-                        var assignRegister = virtualAssembler.GetIntRegisterForVirtual(returnValueReg);
+                        var assignRegister = virtualAssembler.GetRegisterForVirtual(returnValueReg);
 
                         //Restore registers
-                        foreach (var register in aliveRegisters.Reverse<IntRegister>())
+                        foreach (var register in aliveRegisters.Reverse<HardwareRegister>())
                         {
                             //If the assign register is allocated, check if used.
                             if (assignRegister.HasValue)
@@ -520,11 +521,22 @@ namespace XONEVirtualMachine.Compiler.Win64
                         int argOffset = (instruction.IntValue + stackOffset) * -RawAssembler.RegisterSize;
                         var storeReg = GetAssignRegister();
 
-                        virtualAssembler.GenerateOneRegisterMemorySourceInstruction(
-                            storeReg,
-                            new MemoryOperand(Register.BP, argOffset),
-                            Assembler.Move,
-                            Assembler.Move);
+                        if (storeReg.Type == VirtualRegisterType.Integer)
+                        {
+                            virtualAssembler.GenerateOneRegisterMemorySourceInstruction(
+                                storeReg,
+                                new MemoryOperand(Register.BP, argOffset),
+                                Assembler.Move,
+                                Assembler.Move);
+                        }
+                        else
+                        {
+                            virtualAssembler.GenerateOneRegisterMemorySourceFloatInstruction(
+                              storeReg,
+                              new MemoryOperand(Register.BP, argOffset),
+                              Assembler.Move,
+                              Assembler.Move);
+                        }
                     }
                     break;
                 case OpCodes.LoadLocal:

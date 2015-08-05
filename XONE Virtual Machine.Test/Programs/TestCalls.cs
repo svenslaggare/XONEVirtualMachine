@@ -42,7 +42,7 @@ namespace XONE_Virtual_Machine.Test.Programs
         [TestMethod]
         public void TestFloatArguments()
         {
-            for (int i = 16; i <= 16; i++)
+            for (int i = 1; i <= 16; i++)
             {
                 using (var container = new Win64Container())
                 {
@@ -53,7 +53,7 @@ namespace XONE_Virtual_Machine.Test.Programs
                     container.VirtualMachine.LoadAssembly(assembly);
                     container.VirtualMachine.Compile();
                     var funcPtr = Marshal.GetDelegateForFunctionPointer<FloatMain>(
-                        container.VirtualMachine.Binder.GetFunction("floatmain()").EntryPoint);
+                        container.VirtualMachine.Binder.GetFunction("floatMain()").EntryPoint);
                     Assert.AreEqual(i * (1 + i) / 2, funcPtr());
                 }
             }

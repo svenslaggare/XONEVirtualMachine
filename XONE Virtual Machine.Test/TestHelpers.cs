@@ -29,8 +29,10 @@ namespace XONE_Virtual_Machine.Test
                     foreach (var function in assembly.Functions)
                     {
                         var disassembler = new Disassembler(
-                        container.VirtualMachine.Compiler.GetCompilationData(function),
-                            x => new XONEVirtualMachine.Compiler.Win64.Disassembler(x));
+                            container.VirtualMachine.Compiler.GetCompilationData(function),
+                            x => new XONEVirtualMachine.Compiler.Win64.Disassembler(x),
+                            DisassemblerOptions.NewLineAfterInstruction);
+
                         writer.WriteLine(disassembler.Disassemble());
                     }
                 }

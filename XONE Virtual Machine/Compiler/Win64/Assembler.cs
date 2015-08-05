@@ -205,6 +205,154 @@ namespace XONEVirtualMachine.Compiler.Win64
     }
 
     /// <summary>
+    /// Represents a hardware register
+    /// </summary>
+    public struct HardwareRegister
+    {
+        /// <summary>
+        /// Indicates if the register is an int register
+        /// </summary>
+        public bool IsInt { get; }
+
+        /// <summary>
+        /// The int register
+        /// </summary>
+        public IntRegister IntRegister { get; }
+
+        /// <summary>
+        /// The float register
+        /// </summary>
+        public FloatRegister FloatRegister { get; }
+
+        /// <summary>
+        /// Creates a new int register
+        /// </summary>
+        /// <param name="intRegister">The int register</param>
+        public HardwareRegister(IntRegister intRegister)
+        {
+            this.IntRegister = intRegister;
+            this.IsInt = true;
+            this.FloatRegister = FloatRegister.XMM0;
+        }
+
+        /// <summary>
+        /// Creates a new float register
+        /// </summary>
+        /// <param name="floatRegister">The float register</param>
+        public HardwareRegister(FloatRegister floatRegister)
+        {
+            this.IntRegister = Register.AX;
+            this.IsInt = false;
+            this.FloatRegister = floatRegister;
+        }
+
+        /// <summary>
+        /// Returns a string representation of the register
+        /// </summary>
+        public override string ToString()
+        {
+            if (this.IsInt)
+            {
+                return this.IntRegister.ToString();
+            }
+            else
+            {
+                return this.FloatRegister.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Implicits converts the given int register into a hardware register
+        /// </summary>
+        /// <param name="register">The register</param>
+        public static implicit operator HardwareRegister(IntRegister register)
+        {
+            return new HardwareRegister(register);
+        }
+
+        /// <summary>
+        /// Implicits converts the given float register into a hardware register
+        /// </summary>
+        /// <param name="floatRegister">The register</param>
+        public static implicit operator HardwareRegister(FloatRegister floatRegister)
+        {
+            return new HardwareRegister(floatRegister);
+        }
+
+        /// <summary>
+        /// Checks if lhs == rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator ==(HardwareRegister lhs, HardwareRegister rhs)
+        {
+            if (lhs.IsInt != rhs.IsInt)
+            {
+                return false;
+            }
+
+            if (lhs.IsInt)
+            {
+                return lhs.IntRegister == rhs.IntRegister;
+            }
+            else
+            {
+                return lhs.FloatRegister == rhs.FloatRegister;
+            }
+        }
+
+        /// <summary>
+        /// Checks if lhs != rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator !=(HardwareRegister lhs, HardwareRegister rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        /// <summary>
+        /// Checks if the current object is equal to the given
+        /// </summary>
+        /// <param name="obj">The object</param>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is HardwareRegister))
+            {
+                return false;
+            }
+
+            var other = (HardwareRegister)obj;
+            
+            if (this.IsInt)
+            {
+                return this.IntRegister == other.IntRegister;
+            }
+            else
+            {
+                return this.FloatRegister == other.FloatRegister;
+
+            }
+        }
+
+        /// <summary>
+        /// Computes the hash code
+        /// </summary>
+        public override int GetHashCode()
+        {
+            if (this.IsInt)
+            {
+                return this.IntRegister.GetHashCode();
+            }
+            else
+            {
+                return this.FloatRegister.GetHashCode();
+
+            }
+        }
+    }
+
+    /// <summary>
     /// The jump condition
     /// </summary>
     public enum JumpCondition
@@ -837,6 +985,23 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="generatedCode">The generated code</param>
         /// <param name="register">The register</param>
+        public static void Push(IList<byte> generatedCode, HardwareRegister register)
+        {
+            if (register.IsInt)
+            {
+                Push(generatedCode, register.IntRegister);
+            }
+            else
+            {
+                Push(generatedCode, register.FloatRegister);
+            }
+        }
+
+        /// <summary>
+        /// Pushes the given register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="register">The register</param>
         public static void Push(IList<byte> generatedCode, IntRegister register)
         {
             GenerateOneRegisterInstruction(
@@ -871,6 +1036,23 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="generatedCode">The generated code</param>
         /// <param name="register">The register</param>
+        public static void Pop(IList<byte> generatedCode, HardwareRegister register)
+        {
+            if (register.IsInt)
+            {
+                Pop(generatedCode, register.IntRegister);
+            }
+            else
+            {
+                Pop(generatedCode, register.FloatRegister);
+            }
+        }
+
+        /// <summary>
+        /// Pops the given register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="register">The register</param>
         public static void Pop(IList<byte> generatedCode, IntRegister register)
         {
             GenerateOneRegisterInstruction(
@@ -879,7 +1061,6 @@ namespace XONEVirtualMachine.Compiler.Win64
                 RawAssembler.PopRegister,
                 RawAssembler.PopRegister);
         }
-
 
         /// <summary>
         /// Pops the given register

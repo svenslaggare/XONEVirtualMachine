@@ -158,10 +158,27 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Returns the register for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        /// <returns>The register or null if the register is spilled</returns>
+        public HardwareRegister? GetRegisterForVirtual(VirtualRegister virtualRegister)
+        {
+            if (virtualRegister.Type == VirtualRegisterType.Float)
+            {
+                return this.GetFloatRegisterForVirtual(virtualRegister);
+            }
+            else
+            {
+                return this.GetIntRegisterForVirtual(virtualRegister);
+            }
+        }
+
+        /// <summary>
         /// Returns the instructions that are alive at the given instruction
         /// </summary>
         /// <param name="instructionIndex">The index of the instruction</param>
-        public IEnumerable<IntRegister> GetAliveRegisters(int instructionIndex)
+        public IEnumerable<HardwareRegister> GetAliveRegisters(int instructionIndex)
         {
             return this.compilationData.RegisterAllocation
                 .GetAllocatedRegisters()
@@ -169,7 +186,17 @@ namespace XONEVirtualMachine.Compiler.Win64
                 {
                     return instructionIndex >= interval.Start && instructionIndex <= interval.End;
                 })
-                .Select(interval => this.GetIntRegisterForVirtual(interval.VirtualRegister).Value);
+                .Select<LiveInterval, HardwareRegister>(interval =>
+                {
+                    if (interval.VirtualRegister.Type == VirtualRegisterType.Integer)
+                    {
+                        return this.GetIntRegisterForVirtual(interval.VirtualRegister).Value;
+                    }
+                    else
+                    {
+                        return this.GetFloatRegisterForVirtual(interval.VirtualRegister).Value;
+                    }
+                });
         }
 
         /// <summary>
@@ -231,6 +258,24 @@ namespace XONEVirtualMachine.Compiler.Win64
         public int CalculateStackOffset(int stackIndex)
         {
             return -RawAssembler.RegisterSize * (1 + this.compilationData.Function.Definition.Parameters.Count + stackIndex);
+        }
+
+        /// <summary>
+        /// Calculates the stack offset for the given virtual register
+        /// </summary>
+        /// <param name="virtualRegister">The virtual register</param>
+        public int? CalculateStackOffset(VirtualRegister virtualRegister)
+        {
+            int? stackIndex = this.compilationData.RegisterAllocation.GetStackIndex(virtualRegister);
+
+            if (stackIndex.HasValue)
+            {
+                return this.CalculateStackOffset(stackIndex.Value);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -340,8 +385,9 @@ namespace XONEVirtualMachine.Compiler.Win64
                 var op2Reg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
                 var spillReg = this.GetFloatSpillRegister();
 
+                Assembler.Move(generatedCode, spillReg, new MemoryOperand(Register.BP, op1StackOffset));
                 inst1(generatedCode, spillReg, op2Reg);
-                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), op2Reg);
+                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, op1StackOffset), spillReg);
             }
             else
             {
@@ -522,6 +568,44 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Generates code for an instruction with a virtual register destination and fixed register source
+        /// </summary>
+        /// <param name="destinationRegister">The destination register</param>
+        /// <param name="source">The source</param>
+        /// <param name="skipIfSame">Indicates if the instruction will be skipped of destination == source.</param>
+        public void GenerateTwoRegisterFixedSourceInstruction(VirtualRegister destinationRegister, FloatRegister source,
+            Action<IList<byte>, FloatRegister, FloatRegister> inst1,
+            Action<IList<byte>, MemoryOperand, FloatRegister> inst2,
+            bool skipIfSame = false)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+            int? opStack = compilationData.RegisterAllocation.GetStackIndex(destinationRegister);
+
+            if (!opStack.HasValue)
+            {
+                var opReg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
+
+                if (skipIfSame)
+                {
+                    if (opReg != source)
+                    {
+                        inst1(generatedCode, opReg, source);
+                    }
+                }
+                else
+                {
+                    inst1(generatedCode, opReg, source);
+                }
+            }
+            else
+            {
+                var opStackOffset = CalculateStackOffset(opStack.Value);
+                inst2(generatedCode, new MemoryOperand(Register.BP, opStackOffset), source);
+            }
+        }
+
+        /// <summary>
         /// Generates code for an instruction with a memory destination and virtual register source
         /// </summary>
         /// <param name="destination">The destination</param>
@@ -566,6 +650,33 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (!opStack.HasValue)
             {
                 var destinationReg = this.GetIntRegisterForVirtual(destinationRegister).Value;
+                inst1(generatedCode, destinationReg, source);
+            }
+            else
+            {
+                var opStackOffset = CalculateStackOffset(opStack.Value);
+                RewriteMemory(memoryRewrite, new MemoryOperand(Register.BP, opStackOffset), source, inst1, inst2);
+            }
+        }
+
+        /// <summary>
+        /// Generates code for a float instruction with virtual register destination and memory source
+        /// </summary>
+        /// <param name="destinationRegister">The destination</param>
+        /// <param name="source">The source</param>
+        /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
+        public void GenerateOneRegisterMemorySourceFloatInstruction(VirtualRegister destinationRegister, MemoryOperand source,
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst1,
+            Action<IList<byte>, MemoryOperand, FloatRegister> inst2,
+            MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
+        {
+            var generatedCode = compilationData.Function.GeneratedCode;
+            var regAlloc = compilationData.RegisterAllocation;
+            int? opStack = compilationData.RegisterAllocation.GetStackIndex(destinationRegister);
+
+            if (!opStack.HasValue)
+            {
+                var destinationReg = this.GetFloatRegisterForVirtual(destinationRegister).Value;
                 inst1(generatedCode, destinationReg, source);
             }
             else

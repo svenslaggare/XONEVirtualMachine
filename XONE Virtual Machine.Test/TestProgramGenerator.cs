@@ -410,7 +410,7 @@ namespace XONE_Virtual_Machine.Test
         public static Function FloatAddMainFunction(Win64Container container, int numArgs)
         {
             var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
-            var def = new FunctionDefinition("floatmain", new List<VMType>(), floatType);
+            var def = new FunctionDefinition("floatMain", new List<VMType>(), floatType);
 
             var parameters = new List<VMType>();
             for (int i = 0; i < numArgs; i++)
