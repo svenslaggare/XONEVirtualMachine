@@ -909,6 +909,42 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Moves the memory operand to the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source memory</param>
+        public static void Move(IList<byte> generatedCode, HardwareRegister destination, MemoryOperand source)
+        {
+            if (destination.IsInt)
+            {
+                Move(generatedCode, destination.IntRegister, source);
+            }
+            else
+            {
+                Move(generatedCode, destination.FloatRegister, source);
+            }
+        }
+
+        /// <summary>
+        /// Moves the register to the memory operand
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination memory</param>
+        /// <param name="source">The source</param>
+        public static void Move(IList<byte> generatedCode, MemoryOperand destination, HardwareRegister source)
+        {
+            if (source.IsInt)
+            {
+                Move(generatedCode, destination, source.IntRegister);
+            }
+            else
+            {
+                Move(generatedCode, destination, source.FloatRegister);
+            }
+        }
+
+        /// <summary>
         /// Compares the second register to the first register
         /// </summary>
         /// <param name="generatedCode">The generated code</param>

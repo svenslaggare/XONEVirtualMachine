@@ -64,11 +64,12 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
-        /// Moves a none float argument to the stack
+        /// Moves an argument to the stack
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="argumentIndex">The argument index</param>
-        private void MoveNoneFloatArgumentToStack(CompilationData compilationData, int argumentIndex)
+        /// <param name="argumentType">The type of the argument</param>
+        private void MoveArgumentToStack(CompilationData compilationData, int argumentIndex, VMType argumentType)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
             int argStackOffset = -(1 + argumentIndex) * RawAssembler.RegisterSize;
@@ -81,42 +82,34 @@ namespace XONEVirtualMachine.Compiler.Win64
                     Register.BP,
                     RawAssembler.RegisterSize * (6 + stackArgumentIndex));
 
-                var tmpReg = new IntRegister(Register.AX);
+                HardwareRegister tmpReg;
+
+                if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
+                {
+                    tmpReg = compilationData.VirtualAssembler.GetFloatSpillRegister();
+                }
+                else
+                {
+                    tmpReg = new IntRegister(Register.AX);
+                }
+
                 Assembler.Move(generatedCode, tmpReg, argStackSource);
                 Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), tmpReg);
             }
             else
             {
-                var argReg = intArgumentRegisters[argumentIndex];
-                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), argReg);
-            }
-        }
+                //var argReg = floatArgumentRegisters[argumentIndex];
+                HardwareRegister argReg;
 
-        /// <summary>
-        /// Moves a float argument to the stack
-        /// </summary>
-        /// <param name="compilationData">The compilation data</param>
-        /// <param name="argumentIndex">The argument index</param>
-        private void MoveFloatArgumentToStack(CompilationData compilationData, int argumentIndex)
-        {
-            var generatedCode = compilationData.Function.GeneratedCode;
-            int argStackOffset = -(1 + argumentIndex) * RawAssembler.RegisterSize;
+                if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
+                {
+                    argReg = floatArgumentRegisters[argumentIndex];
+                }
+                else
+                {
+                    argReg = intArgumentRegisters[argumentIndex];
+                }
 
-            if (argumentIndex >= numRegisterArguments)
-            {
-                int stackArgumentIndex = this.GetStackArgumentIndex(compilationData, argumentIndex);
-
-                var argStackSource = new MemoryOperand(
-                    Register.BP,
-                    RawAssembler.RegisterSize * (6 + stackArgumentIndex));
-
-                var tmpReg = compilationData.VirtualAssembler.GetFloatSpillRegister();
-                Assembler.Move(generatedCode, tmpReg, argStackSource);
-                Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), tmpReg);
-            }
-            else
-            {
-                var argReg = floatArgumentRegisters[argumentIndex];
                 Assembler.Move(generatedCode, new MemoryOperand(Register.BP, argStackOffset), argReg);
             }
         }
@@ -132,18 +125,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             for (int argumentIndex = parameterTypes.Count - 1; argumentIndex >= 0; argumentIndex--)
             {
-                if (parameterTypes[argumentIndex].IsPrimitiveType(PrimitiveTypes.Float))
-                {
-                    this.MoveFloatArgumentToStack(
-                        compilationData,
-                        argumentIndex);
-                }
-                else
-                {
-                    this.MoveNoneFloatArgumentToStack(
-                        compilationData,
-                        argumentIndex);
-                }
+                this.MoveArgumentToStack(compilationData, argumentIndex, parameterTypes[argumentIndex]);
             }
         }
 
@@ -207,95 +189,88 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (argumentIndex >= numRegisterArguments)
             {
                 //Move arguments to the stack
+                HardwareRegister spillReg;
+                int stackOffset = 0;
+
                 if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-                    var spillReg = virtualAssembler.GetFloatSpillRegister();
-                    var argMemory = new MemoryOperand();
+                    spillReg = virtualAssembler.GetFloatSpillRegister();
 
-                    if (virtualRegStack.HasValue)
+                    if (!virtualRegStack.HasValue)
                     {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                        stackOffset = aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value];
                     }
-                    else
-                    {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            -(argsStart + aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value])
-                            * RawAssembler.RegisterSize);
-                    }
-
-                    Assembler.Move(generatedCode, spillReg, argMemory);
-                    Assembler.Push(generatedCode, spillReg);
                 }
                 else
                 {
-                    var spillReg = virtualAssembler.GetIntSpillRegister();
-                    var argMemory = new MemoryOperand();
+                    spillReg = virtualAssembler.GetIntSpillRegister();
 
-                    if (virtualRegStack.HasValue)
+                    if (!virtualRegStack.HasValue)
                     {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                        stackOffset = aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value];
                     }
-                    else
-                    {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
-                            * RawAssembler.RegisterSize);
-                    }
-
-                    Assembler.Move(generatedCode, spillReg, argMemory);
-                    Assembler.Push(generatedCode, spillReg);
                 }
+
+                var argMemory = new MemoryOperand();
+
+                if (virtualRegStack.HasValue)
+                {
+                    argMemory = new MemoryOperand(
+                        Register.BP,
+                        virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                }
+                else
+                {
+                    argMemory = new MemoryOperand(
+                        Register.BP,
+                        -(argsStart + stackOffset)
+                        * RawAssembler.RegisterSize);
+                }
+
+                Assembler.Move(generatedCode, spillReg, argMemory);
+                Assembler.Push(generatedCode, spillReg);
             }
             else
             {
+                HardwareRegister argReg;
+                int stackOffset = 0;
+
                 if (argumentType.IsPrimitiveType(PrimitiveTypes.Float))
                 {
-                    var argReg = floatArgumentRegisters[argumentIndex];
-                    var argMemory = new MemoryOperand();
+                    argReg = floatArgumentRegisters[argumentIndex];
 
-                    if (virtualRegStack.HasValue)
+                    if (!virtualRegStack.HasValue)
                     {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                        stackOffset = aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value];
                     }
-                    else
-                    {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            -(argsStart + aliveRegistersStack[virtualAssembler.GetFloatRegisterForVirtual(virtualReg).Value])
-                            * RawAssembler.RegisterSize);
-                    }
-
-                    Assembler.Move(generatedCode, argReg, argMemory);
                 }
                 else
                 {
-                    var argReg = intArgumentRegisters[argumentIndex];
-                    var argMemory = new MemoryOperand();
+                    argReg = intArgumentRegisters[argumentIndex];
 
-                    if (virtualRegStack.HasValue)
+                    if (!virtualRegStack.HasValue)
                     {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                        stackOffset = aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value];
                     }
-                    else
-                    {
-                        argMemory = new MemoryOperand(
-                            Register.BP,
-                            -(argsStart + aliveRegistersStack[virtualAssembler.GetIntRegisterForVirtual(virtualReg).Value])
-                            * RawAssembler.RegisterSize);
-                    }
-
-                    Assembler.Move(generatedCode, argReg, argMemory);
                 }
+
+                var argMemory = new MemoryOperand();
+
+                if (virtualRegStack.HasValue)
+                {
+                    argMemory = new MemoryOperand(
+                        Register.BP,
+                        virtualAssembler.CalculateStackOffset(virtualRegStack.Value));
+                }
+                else
+                {
+                    argMemory = new MemoryOperand(
+                        Register.BP,
+                        -(argsStart + stackOffset)
+                        * RawAssembler.RegisterSize);
+                }
+
+                Assembler.Move(generatedCode, argReg, argMemory);
             }
         }
 
