@@ -22,9 +22,9 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public int End { get; }
 
         /// <summary>
-        /// The virtual register number
+        /// The virtual register
         /// </summary>
-        public int VirtualRegister { get; }
+        public VirtualRegister VirtualRegister { get; }
 
         /// <summary>
         /// Creates a new interval
@@ -32,7 +32,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="start">The start of the interval</param>
         /// <param name="end">he end of the interval</param>
         /// <param name="virtualRegister">The virtual register number</param>
-        public LiveInterval(int start, int end, int virtualRegister)
+        public LiveInterval(int start, int end, VirtualRegister virtualRegister)
         {
             this.Start = start;
             this.End = end;
@@ -56,7 +56,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="controlFlowGraph">The control flow graph</param>
         private static int NumVirtualRegister(VirtualControlFlowGraph controlFlowGraph)
         {
-            var virtualRegisters = new HashSet<int>();
+            var virtualRegisters = new HashSet<VirtualRegister>();
             foreach (var block in controlFlowGraph.Vertices)
             {
                 foreach (var instruction in block.Instructions)
@@ -74,6 +74,32 @@ namespace XONEVirtualMachine.Compiler.Analysis
             }
 
             return virtualRegisters.Count;
+        }
+
+        /// <summary>
+        /// Returns the virtual registers in the given control flow graph
+        /// </summary>
+        /// <param name="controlFlowGraph">The control flow graph</param>
+        private static IList<VirtualRegister> GetVirtualRegisters(VirtualControlFlowGraph controlFlowGraph)
+        {
+            var virtualRegisters = new HashSet<VirtualRegister>();
+            foreach (var block in controlFlowGraph.Vertices)
+            {
+                foreach (var instruction in block.Instructions)
+                {
+                    if (instruction.AssignRegister.HasValue)
+                    {
+                        virtualRegisters.Add(instruction.AssignRegister.Value);
+                    }
+
+                    foreach (var register in instruction.UsesRegisters)
+                    {
+                        virtualRegisters.Add(register);
+                    }
+                }
+            }
+
+            return virtualRegisters.ToList();
         }
 
         /// <summary>
@@ -99,10 +125,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="useSites">The use sites</param>
         /// <param name="assignSites">The assign sites</param>
         private static void GetRegisterUsage(VirtualControlFlowGraph controlFlowGraph,
-            out IDictionary<int, IList<UsageSite>> useSites, out IDictionary<int, IList<UsageSite>> assignSites)
+            out IDictionary<VirtualRegister, IList<UsageSite>> useSites, out IDictionary<VirtualRegister, IList<UsageSite>> assignSites)
         {
-            useSites = new Dictionary<int, IList<UsageSite>>();
-            assignSites = new Dictionary<int, IList<UsageSite>>();
+            useSites = new Dictionary<VirtualRegister, IList<UsageSite>>();
+            assignSites = new Dictionary<VirtualRegister, IList<UsageSite>>();
 
             foreach (var block in controlFlowGraph.Vertices)
             {
@@ -111,7 +137,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 {
                     if (instruction.AssignRegister != null)
                     {
-                        int register = instruction.AssignRegister.Value;
+                        var register = instruction.AssignRegister.Value;
                         IList<UsageSite> assigns;
                         if (!useSites.TryGetValue(register, out assigns))
                         {
@@ -197,7 +223,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
             BackflowGraph backflowGraph,
             VirtualBasicBlock basicBlock, int startOffset,
             ISet<VirtualBasicBlock> visited,
-            int register, ISet<int> aliveAt)
+            VirtualRegister register, ISet<int> aliveAt)
         {
             if (visited.Contains(basicBlock))
             {
@@ -252,7 +278,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="register">The register</param>
         /// <param name="useSites">The use sites</param>
         /// <param name="aliveAt">The instructions which the register is alive</param>
-        private static void ComputeLiveness(BackflowGraph backflowGraph, int register, IList<UsageSite> useSites, ISet<int> aliveAt)
+        private static void ComputeLiveness(BackflowGraph backflowGraph, VirtualRegister register, IList<UsageSite> useSites, ISet<int> aliveAt)
         {
             foreach (var useSite in useSites)
             {
@@ -267,11 +293,11 @@ namespace XONEVirtualMachine.Compiler.Analysis
         }
 
         /// <summary>
-        /// Returns the live interval for the given register
+        /// Returns the live interval for the given virtual register
         /// </summary>
-        /// <param name="register">The register</param>
+        /// <param name="register">The virtual register</param>
         /// <param name="aliveAt">The instructions which the register is alive</param>
-        private static LiveInterval GetLiveInterval(int register, ISet<int> aliveAt)
+        private static LiveInterval GetLiveInterval(VirtualRegister register, ISet<int> aliveAt)
         {
             int start = int.MaxValue;
             int end = int.MinValue;
@@ -292,18 +318,18 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public static IList<LiveInterval> ComputeLiveness(VirtualControlFlowGraph controlFlowGraph)
         {
             var liveIntervals = new List<LiveInterval>();
-            int numRegisters = NumVirtualRegister(controlFlowGraph);
+            var virtualRegisters = GetVirtualRegisters(controlFlowGraph);
 
             //Get the register usage
-            IDictionary<int, IList<UsageSite>> useSites;
-            IDictionary<int, IList<UsageSite>> assignSites;
+            IDictionary<VirtualRegister, IList<UsageSite>> useSites;
+            IDictionary<VirtualRegister, IList<UsageSite>> assignSites;
             GetRegisterUsage(controlFlowGraph, out useSites, out assignSites);
 
             //Get the backflow graph
             var backflowGraph = GetBackflow(controlFlowGraph);
 
             //Perform the analysis for one register at a time
-            for (int reg = 0; reg < numRegisters; reg++)
+            foreach (var reg in virtualRegisters)
             {
                 IList<UsageSite> registerUseSites;
 

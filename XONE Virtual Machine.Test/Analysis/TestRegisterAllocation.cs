@@ -108,9 +108,9 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 Assert.AreEqual(3, registerAllocation.NumAllocatedRegisters);
                 Assert.AreEqual(0, registerAllocation.NumSpilledRegisters);
 
-                Assert.AreEqual(0, registerAllocation.GetRegister(0));
-                Assert.AreEqual(1, registerAllocation.GetRegister(1));
-                Assert.AreEqual(1, registerAllocation.GetRegister(1));
+                Assert.AreEqual(0, registerAllocation.GetRegister(new VirtualRegister(VirtualRegisterType.Integer, 0)));
+                Assert.AreEqual(1, registerAllocation.GetRegister(new VirtualRegister(VirtualRegisterType.Integer, 1)));
+                Assert.AreEqual(1, registerAllocation.GetRegister(new VirtualRegister(VirtualRegisterType.Integer, 1)));
             }
         }
     }

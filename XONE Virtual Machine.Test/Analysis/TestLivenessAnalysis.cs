@@ -32,11 +32,11 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 var livenessIntervals = LivenessAnalysis.ComputeLiveness(virtualControlFlowGraph);
 
-                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister);
+                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister.Number);
                 Assert.AreEqual(0, livenessIntervals[0].Start);
                 Assert.AreEqual(3, livenessIntervals[0].End);
 
-                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister);
+                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister.Number);
                 Assert.AreEqual(1, livenessIntervals[1].Start);
                 Assert.AreEqual(2, livenessIntervals[1].End);
             }
@@ -62,15 +62,15 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 Assert.AreEqual(3, livenessIntervals.Count);
 
-                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister);
+                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister.Number);
                 Assert.AreEqual(0, livenessIntervals[0].Start);
                 Assert.AreEqual(9, livenessIntervals[0].End);
 
-                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister);
+                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister.Number);
                 Assert.AreEqual(1, livenessIntervals[1].Start);
                 Assert.AreEqual(2, livenessIntervals[1].End);
 
-                Assert.AreEqual(2, livenessIntervals[2].VirtualRegister);
+                Assert.AreEqual(2, livenessIntervals[2].VirtualRegister.Number);
                 Assert.AreEqual(4, livenessIntervals[2].Start);
                 Assert.AreEqual(8, livenessIntervals[2].End);
             }
@@ -96,15 +96,15 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 Assert.AreEqual(3, livenessIntervals.Count);
 
-                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister);
+                Assert.AreEqual(0, livenessIntervals[0].VirtualRegister.Number);
                 Assert.AreEqual(0, livenessIntervals[0].Start);
                 Assert.AreEqual(5, livenessIntervals[0].End);
 
-                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister);
+                Assert.AreEqual(1, livenessIntervals[1].VirtualRegister.Number);
                 Assert.AreEqual(1, livenessIntervals[1].Start);
                 Assert.AreEqual(1, livenessIntervals[1].End);
 
-                Assert.AreEqual(2, livenessIntervals[2].VirtualRegister);
+                Assert.AreEqual(2, livenessIntervals[2].VirtualRegister.Number);
                 Assert.AreEqual(3, livenessIntervals[2].Start);
                 Assert.AreEqual(4, livenessIntervals[2].End);
             }

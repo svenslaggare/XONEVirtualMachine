@@ -21,12 +21,12 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <summary>
         /// The virtual registers the instruction uses
         /// </summary>
-        public IReadOnlyList<int> UsesRegisters { get; }
+        public IReadOnlyList<VirtualRegister> UsesRegisters { get; }
 
         /// <summary>
         /// The register that the instruction assigns
         /// </summary>
-        public int? AssignRegister { get; }
+        public VirtualRegister? AssignRegister { get; }
 
         /// <summary>
         /// Creates a new virtual register instruction
@@ -34,10 +34,10 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="instruction">The instruction</param>
         /// <param name="usesRegisters">The registers that is being used</param>
         /// <param name="assignRegister">The register that the instruction assigns to</param>
-        public VirtualInstruction(Instruction instruction, IList<int> usesRegisters, int? assignRegister = null)
+        public VirtualInstruction(Instruction instruction, IList<VirtualRegister> usesRegisters, VirtualRegister? assignRegister = null)
         {
             this.Instruction = instruction;
-            this.UsesRegisters = new ReadOnlyCollection<int>(usesRegisters);
+            this.UsesRegisters = new ReadOnlyCollection<VirtualRegister>(usesRegisters);
             this.AssignRegister = assignRegister;
         }
 
@@ -73,7 +73,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents a virtual register
     /// </summary>
-    public struct VirtualRegister
+    public struct VirtualRegister : IComparable<VirtualRegister>
     {
         /// <summary>
         /// The type of the register
@@ -94,6 +94,18 @@ namespace XONEVirtualMachine.Compiler.Analysis
         {
             this.Type = type;
             this.Number = number;
+        }
+
+        /// <summary>
+        /// Returns an invalid register
+        /// </summary>
+        public static VirtualRegister Invalid => new VirtualRegister(VirtualRegisterType.Integer, -1);
+
+        /// <summary>
+        /// Returns a string representation of the virtual register
+        public override string ToString()
+        {
+            return $"{this.Number} ({this.Type})";
         }
 
         /// <summary>
@@ -138,6 +150,22 @@ namespace XONEVirtualMachine.Compiler.Analysis
         {
             return this.Type.GetHashCode() + 31 * this.Number.GetHashCode();
         }
+
+        /// <summary>
+        /// Compares the current register against the given
+        /// </summary>
+        /// <param name="other">The other register</param>
+        public int CompareTo(VirtualRegister other)
+        {
+            int result = this.Type.CompareTo(other.Type);
+
+            if (result == 0)
+            {
+                return this.Number.CompareTo(other.Number);
+            }
+
+            return result;
+        }
     }
 
     /// <summary>
@@ -152,7 +180,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="function">The function</param>
         public static IList<VirtualInstruction> Create(VirtualMachine virtualMachine, Function function)
         {
-            IList<int> localRegisters;
+            IList<VirtualRegister> localRegisters;
             return Create(virtualMachine, function, out localRegisters);
         }
 
@@ -165,20 +193,20 @@ namespace XONEVirtualMachine.Compiler.Analysis
         public static IList<VirtualInstruction> Create(
             VirtualMachine virtualMachine,
             Function function,
-            out IList<int> localRegisters)
+            out IList<VirtualRegister> localRegisters)
         {
             var instructions = function.Instructions;
             var virtualInstructions = new List<VirtualInstruction>();
-            var localRegs = new HashSet<int>();
+            var localRegs = new HashSet<VirtualRegister>();
 
             int virtualRegister = 0;
             int numStackRegisters = 0;
-            Func<int> UseRegister = () => --virtualRegister;
-            Func<int> AssignRegister = () =>
+            Func<VirtualRegister> UseRegister = () => new VirtualRegister(VirtualRegisterType.Integer, --virtualRegister);
+            Func<VirtualRegister> AssignRegister = () =>
             {
                 int reg = virtualRegister++;
                 numStackRegisters = Math.Max(virtualRegister, numStackRegisters);
-                return reg;
+                return new VirtualRegister(VirtualRegisterType.Integer, reg);
             };
 
             var localInstructions = new List<int>();
@@ -186,8 +214,8 @@ namespace XONEVirtualMachine.Compiler.Analysis
             var i = 0;
             foreach (var instruction in instructions)
             {
-                var usesRegisters = new List<int>();
-                int? assignRegister = null;
+                var usesRegisters = new List<VirtualRegister>();
+                VirtualRegister? assignRegister = null;
 
                 switch (instruction.OpCode)
                 {
@@ -260,13 +288,15 @@ namespace XONEVirtualMachine.Compiler.Analysis
             foreach (var local in localInstructions)
             {
                 var instruction = virtualInstructions[local];
-                int localRegister = numStackRegisters + instruction.Instruction.IntValue;
+                var localRegister = new VirtualRegister(
+                    VirtualRegisterType.Integer,
+                    numStackRegisters + instruction.Instruction.IntValue);
 
                 if (instruction.Instruction.OpCode == OpCodes.LoadLocal)
                 {
                     instruction = new VirtualInstruction(
                         instruction.Instruction,
-                        new List<int>() { localRegister },
+                        new List<VirtualRegister>() { localRegister },
                         instruction.AssignRegister);
                 }
                 else

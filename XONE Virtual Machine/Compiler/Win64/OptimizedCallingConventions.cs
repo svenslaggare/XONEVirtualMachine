@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using XONEVirtualMachine.Compiler.Analysis;
 using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
@@ -207,7 +208,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         public void CallFunctionArgument(
             CompilationData compilationData,
             int argumentIndex, VMType argumentType,
-            IReadOnlyList<int> argumentRegisters,
+            IReadOnlyList<VirtualRegister> argumentRegisters,
             IDictionary<IntRegister, int> aliveRegistersStack,
             FunctionDefinition toCall)
         {
@@ -292,7 +293,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="toCall">The function to call</param>
         public void CallFunctionArguments(
             CompilationData compilationData,
-            IReadOnlyList<int> argumentRegisters,
+            IReadOnlyList<VirtualRegister> argumentRegisters,
             IDictionary<IntRegister, int> aliveRegistersStack, FunctionDefinition toCall)
         {
             for (int arg = toCall.Parameters.Count - 1; arg >= 0; arg--)
@@ -318,7 +319,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="compilationData">The compilation data</param>
         /// <param name="returnValueRegister">The virtual register where the return value is stored</param>
-        public void MakeReturnValue(CompilationData compilationData, int returnValueRegister)
+        public void MakeReturnValue(CompilationData compilationData, VirtualRegister returnValueRegister)
         {
             var def = compilationData.Function.Definition;
             var virtualAssembler = compilationData.VirtualAssembler;
@@ -347,7 +348,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="compilationData">The compilation data</param>
         /// <param name="toCall">The function to call</param>
         /// <param name="returnValueRegister">The register to store the return value</param>
-        public void HandleReturnValue(CompilationData compilationData, FunctionDefinition toCall, int returnValueRegister)
+        public void HandleReturnValue(CompilationData compilationData, FunctionDefinition toCall, VirtualRegister returnValueRegister)
         {
             //If we have passed arguments via the stack, adjust the stack pointer.
             int numStackArgs = this.CalculateStackArguments(toCall.Parameters);

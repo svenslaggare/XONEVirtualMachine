@@ -172,12 +172,12 @@ namespace XONEVirtualMachine.Compiler.Win64
             var virtualAssembler = compilationData.VirtualAssembler;
             int stackOffset = 1;
 
-            Func<int> GetAssignRegister = () =>
+            Func<VirtualRegister> GetAssignRegister = () =>
             {
                 return virtualInstruction.AssignRegister.Value;
             };
 
-            Func<int, int> GetUseRegister = x =>
+            Func<int, VirtualRegister> GetUseRegister = x =>
             {
                 return virtualInstruction.UsesRegisters[x];
             };
@@ -412,7 +412,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         Assembler.Add(generatedCode, Register.SP, stackAlignment + 32);
 
                         //Hande the return value
-                        int returnValueReg = -1;
+                        var returnValueReg = VirtualRegister.Invalid;
 
                         if (!funcToCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
                         {
@@ -448,7 +448,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.Ret:
                     {
                         //Handle the return value
-                        int returnValueReg = -1;
+                        var returnValueReg = VirtualRegister.Invalid;
 
                         if (!funcDef.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))
                         {

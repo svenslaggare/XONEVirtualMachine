@@ -39,18 +39,18 @@ namespace XONE_Virtual_Machine.Test.Analysis
                 var virtualInstructions = VirtualRegisterIR.Create(container.VirtualMachine, func);
                 Assert.AreEqual(4, virtualInstructions.Count);
 
-                Assert.AreEqual(0, virtualInstructions[0].AssignRegister);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 0), virtualInstructions[0].AssignRegister);
 
-                Assert.AreEqual(1, virtualInstructions[1].AssignRegister);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 1), virtualInstructions[1].AssignRegister);
 
-                Assert.AreEqual(0, virtualInstructions[2].AssignRegister);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 0), virtualInstructions[2].AssignRegister);
                 Assert.AreEqual(2, virtualInstructions[2].UsesRegisters.Count);
-                Assert.AreEqual(1, virtualInstructions[2].UsesRegisters[0]);
-                Assert.AreEqual(0, virtualInstructions[2].UsesRegisters[1]);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 1), virtualInstructions[2].UsesRegisters[0]);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 0), virtualInstructions[2].UsesRegisters[1]);
 
                 Assert.IsNull(virtualInstructions[3].AssignRegister);
                 Assert.AreEqual(1, virtualInstructions[3].UsesRegisters.Count);
-                Assert.AreEqual(0, virtualInstructions[3].UsesRegisters[0]);
+                Assert.AreEqual(new VirtualRegister(VirtualRegisterType.Integer, 0), virtualInstructions[3].UsesRegisters[0]);
             }
         }
     }

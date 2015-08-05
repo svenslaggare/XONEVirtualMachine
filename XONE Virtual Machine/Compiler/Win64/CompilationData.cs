@@ -33,7 +33,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// The virtual registers for locals
         /// </summary>
-        public IReadOnlyList<int> LocalVirtualRegisters { get; }
+        public IReadOnlyList<VirtualRegister> LocalVirtualRegisters { get; }
 
         /// <summary>
         /// The register allocation
@@ -58,11 +58,11 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (function.Optimize)
             {
-                IList<int> localRegs;
+                IList<VirtualRegister> localRegs;
                 this.VirtualInstructions = new ReadOnlyCollection<VirtualInstruction>(
                     VirtualRegisterIR.Create(virtualMachine, function, out localRegs));
 
-                this.LocalVirtualRegisters = new ReadOnlyCollection<int>(localRegs);
+                this.LocalVirtualRegisters = new ReadOnlyCollection<VirtualRegister>(localRegs);
 
                 int numRegs = virtualMachine.Settings.GetSetting<int>("NumIntRegisters") ?? 7;
 

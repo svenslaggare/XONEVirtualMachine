@@ -66,8 +66,8 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// </summary>
     public class RegisterAllocation
     {
-        private readonly IDictionary<int, AllocatedRegister> allocated = new Dictionary<int, AllocatedRegister>();
-        private readonly IDictionary<int, SpilledRegister> spilled = new Dictionary<int, SpilledRegister>();
+        private readonly IDictionary<VirtualRegister, AllocatedRegister> allocated = new Dictionary<VirtualRegister, AllocatedRegister>();
+        private readonly IDictionary<VirtualRegister, SpilledRegister> spilled = new Dictionary<VirtualRegister, SpilledRegister>();
 
         /// <summary>
         /// Creates a new register allocation
@@ -109,7 +109,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Returns the register for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public int? GetRegister(int virtualRegister)
+        public int? GetRegister(VirtualRegister virtualRegister)
         {
             AllocatedRegister allocatedRegister;
             if (this.allocated.TryGetValue(virtualRegister, out allocatedRegister))
@@ -124,7 +124,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Returns the register allocation information for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public AllocatedRegister? GetRegisterAllocation(int virtualRegister)
+        public AllocatedRegister? GetRegisterAllocation(VirtualRegister virtualRegister)
         {
             AllocatedRegister allocatedRegister;
             if (this.allocated.TryGetValue(virtualRegister, out allocatedRegister))
@@ -139,7 +139,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Returns the stack index for the given virtual register
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
-        public int? GetStackIndex(int virtualRegister)
+        public int? GetStackIndex(VirtualRegister virtualRegister)
         {
             SpilledRegister spilledRegister;
             if (this.spilled.TryGetValue(virtualRegister, out spilledRegister))

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using XONEVirtualMachine.Compiler.Analysis;
 
 namespace XONEVirtualMachine.Compiler.Win64
 {
@@ -81,7 +82,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="virtualRegister">The virtual register</param>
         /// <returns>The register or null if the register is spilled</returns>
-        public IntRegister? GetRegisterForVirtual(int virtualRegister)
+        public IntRegister? GetRegisterForVirtual(VirtualRegister virtualRegister)
         {
             var reg = this.compilationData.RegisterAllocation.GetRegister(virtualRegister);
 
@@ -150,7 +151,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Generates code for an instruction with a virtual register source
         /// </summary>
         /// <param name="sourceRegister">The source register</param>
-        public void GenerateOneRegisterInstruction(int sourceRegister,
+        public void GenerateOneRegisterInstruction(VirtualRegister sourceRegister,
             Action<IList<byte>, IntRegister> inst1,
             Action<IList<byte>, MemoryOperand> inst2)
         {
@@ -176,7 +177,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destinationRegister">The destination register</param>
         /// <param name="sourceRegister">The source register</param>
         /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
-        public void GenerateTwoRegistersInstruction(int destinationRegister, int sourceRegister,
+        public void GenerateTwoRegistersInstruction(VirtualRegister destinationRegister, VirtualRegister sourceRegister,
             Action<IList<byte>, IntRegister, IntRegister> inst1,
             Action<IList<byte>, IntRegister, MemoryOperand> inst2,
             Action<IList<byte>, MemoryOperand, IntRegister> inst3,
@@ -226,7 +227,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination</param>
         /// <param name="sourceRegister">The source register</param>
         /// <param name="skipIfSame">Indicates if the instruction will be skipped of destination == source.</param>
-        public void GenerateTwoRegisterFixedDestinationInstruction(IntRegister destination, int sourceRegister,
+        public void GenerateTwoRegisterFixedDestinationInstruction(IntRegister destination, VirtualRegister sourceRegister,
             Action<IList<byte>, IntRegister, IntRegister> inst1,
             Action<IList<byte>, IntRegister, MemoryOperand> inst2,
             bool skipIfSame = false)
@@ -264,7 +265,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destinationRegister">The destination register</param>
         /// <param name="source">The source</param>
         /// <param name="skipIfSame">Indicates if the instruction will be skipped of destination == source.</param>
-        public void GenerateTwoRegisterFixedSourceInstruction(int destinationRegister, IntRegister source,
+        public void GenerateTwoRegisterFixedSourceInstruction(VirtualRegister destinationRegister, IntRegister source,
             Action<IList<byte>, IntRegister, IntRegister> inst1,
             Action<IList<byte>, MemoryOperand, IntRegister> inst2,
             bool skipIfSame = false)
@@ -302,7 +303,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination</param>
         /// <param name="sourceRegister">The source register</param>
         /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
-        public void GenerateOneRegisterMemoryDestinationInstruction(MemoryOperand destination, int sourceRegister,
+        public void GenerateOneRegisterMemoryDestinationInstruction(MemoryOperand destination, VirtualRegister sourceRegister,
             Action<IList<byte>, IntRegister, MemoryOperand> inst1,
             Action<IList<byte>, MemoryOperand, IntRegister> inst2,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
@@ -329,7 +330,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destinationRegister">The destination</param>
         /// <param name="source">The source</param>
         /// <param name="memoryRewrite">Determines how an instruction with two memory operands will be rewritten into one memory operand.</param>
-        public void GenerateOneRegisterMemorySourceInstruction(int destinationRegister, MemoryOperand source,
+        public void GenerateOneRegisterMemorySourceInstruction(VirtualRegister destinationRegister, MemoryOperand source,
             Action<IList<byte>, IntRegister, MemoryOperand> inst1,
             Action<IList<byte>, MemoryOperand, IntRegister> inst2,
             MemoryRewrite memoryRewrite = MemoryRewrite.MemoryOnLeft)
@@ -355,7 +356,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="destinationRegister">The destination register</param>
         /// <param name="value">The value</param>
-        public void GenerateOneRegisterWithValueInstruction(int destinationRegister, int value,
+        public void GenerateOneRegisterWithValueInstruction(VirtualRegister destinationRegister, int value,
             Action<IList<byte>, IntRegister, int> inst1,
             Action<IList<byte>, MemoryOperand, int> inst2)
         {
