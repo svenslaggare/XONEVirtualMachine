@@ -540,14 +540,13 @@ namespace XONEVirtualMachine.Compiler.Win64
                     }
                     break;
                 case OpCodes.LoadLocal:
-                case OpCodes.StoreLocal:
                     {
-                        if (instruction.OpCode == OpCodes.LoadLocal)
-                        {
-                            var valueReg = GetAssignRegister();
-                            var localReg = GetUseRegister(0);
+                        var valueReg = GetAssignRegister();
+                        var localReg = GetUseRegister(0);
 
-                            virtualAssembler.GenerateTwoRegistersInstruction(
+                        if (localReg.Type == VirtualRegisterType.Float)
+                        {
+                            virtualAssembler.GenerateTwoRegistersFloatInstruction(
                                 valueReg,
                                 localReg,
                                 Assembler.Move,
@@ -556,9 +555,31 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
                         else
                         {
-                            var valueReg = GetUseRegister(0);
-                            var localReg = GetAssignRegister();
+                            virtualAssembler.GenerateTwoRegistersInstruction(
+                                valueReg,
+                                localReg,
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
+                        }
+                    }
+                    break;
+                case OpCodes.StoreLocal:
+                    {
+                        var valueReg = GetUseRegister(0);
+                        var localReg = GetAssignRegister();
 
+                        if (localReg.Type == VirtualRegisterType.Float)
+                        {
+                            virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                localReg,
+                                valueReg,
+                                Assembler.Move,
+                                Assembler.Move,
+                                Assembler.Move);
+                        }
+                        else
+                        {
                             virtualAssembler.GenerateTwoRegistersInstruction(
                                 localReg,
                                 valueReg,

@@ -77,6 +77,23 @@ namespace XONE_Virtual_Machine.Test.Programs
         }
 
         /// <summary>
+        /// Tests a float locals function
+        /// </summary>
+        [TestMethod]
+        public void TestFloatLocals()
+        {
+            using (var container = new Win64Container())
+            {
+                container.VirtualMachine.Settings["NumIntRegisters"] = 5;
+
+                var func = TestProgramGenerator.FloatLocals(container);
+                func.Optimize = true;
+                container.LoadAssembly(Assembly.SingleFunction(func));
+                Assert.AreEqual(4, TestProgramGenerator.ExecuteFloatProgram(container));
+            }
+        }
+
+        /// <summary>
         /// Tests a function with a loop
         /// </summary>
         [TestMethod]

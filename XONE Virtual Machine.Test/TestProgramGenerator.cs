@@ -180,6 +180,29 @@ namespace XONE_Virtual_Machine.Test
         }
 
         /// <summary>
+        /// Function with float locals with none overlapping life time
+        /// </summary>
+        public static Function FloatLocals(Win64Container container)
+        {
+            var floatType = container.VirtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
+
+            var instructions = new List<Instruction>();
+            instructions.Add(new Instruction(OpCodes.LoadFloat, 2.0f));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 0));
+
+            instructions.Add(new Instruction(OpCodes.LoadFloat, 4.0f));
+            instructions.Add(new Instruction(OpCodes.StoreLocal, 1));
+
+            instructions.Add(new Instruction(OpCodes.LoadLocal, 1));
+            instructions.Add(new Instruction(OpCodes.Ret));
+
+            return new Function(
+                new FunctionDefinition("floatMain", new List<VMType>(), floatType),
+                instructions,
+                new List<VMType>() { floatType, floatType });
+        }
+
+        /// <summary>
         /// Creates a function that counts up to the given amount
         /// </summary>
         public static Function LoopCount(Win64Container container, int count)
