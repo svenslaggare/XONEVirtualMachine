@@ -167,7 +167,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             RawAssembler.SubRegisterFromRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                         case OpCodes.MulInt:
-                            RawAssembler.MultRegisterToRegister(generatedCode, Register.AX, Register.CX, true);
+                            RawAssembler.MultRegisterByRegister(generatedCode, Register.AX, Register.CX, true);
                             break;
                         case OpCodes.DivInt:
                             //This sign extends the eax register
@@ -194,7 +194,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                             RawAssembler.SubRegisterFromRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                         case OpCodes.MulFloat:
-                            RawAssembler.MultRegisterToRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
+                            RawAssembler.MultRegisterByRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);
                             break;
                         case OpCodes.DivFloat:
                             RawAssembler.DivRegisterFromRegister(generatedCode, FloatRegister.XMM0, FloatRegister.XMM1);

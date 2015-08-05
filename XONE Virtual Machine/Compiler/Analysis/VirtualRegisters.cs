@@ -296,7 +296,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     case OpCodes.BranchLessThan:
                     case OpCodes.BranchLessOrEqual:
                         {
-                            var compareType = VirtualRegisterType.Integer;
+                            var compareType = VirtualRegister.FromType(function.OperandTypes[i].Last());
                             usesRegisters.Add(UseRegister(compareType));
                             usesRegisters.Add(UseRegister(compareType));
                         }

@@ -713,6 +713,33 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Subtracts the second register to the first
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Sub(IList<byte> generatedCode, FloatRegister destination, FloatRegister source)
+        {
+            RawAssembler.SubRegisterFromRegister(generatedCode, destination, source);
+        }
+
+        /// <summary>
+        /// Subtracts the memory operand from the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source memory</param>
+        public static void Sub(IList<byte> generatedCode, FloatRegister destination, MemoryOperand source)
+        {
+            GenerateSourceMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.SubMemoryRegisterWithIntOffsetFromRegister,
+                RawAssembler.SubMemoryRegisterWithIntOffsetFromRegister);
+        }
+
+        /// <summary>
         /// Multiplies the second register by the first
         /// </summary>
         /// <param name="generatedCode">The generated code</param>
@@ -724,10 +751,10 @@ namespace XONEVirtualMachine.Compiler.Win64
                 generatedCode,
                 destination,
                 source,
-                (gen, x, y) => RawAssembler.MultRegisterToRegister(gen, x, y),
-                RawAssembler.MultRegisterToRegister,
-                RawAssembler.MultRegisterToRegister,
-                RawAssembler.MultRegisterToRegister);
+                (gen, x, y) => RawAssembler.MultRegisterByRegister(gen, x, y),
+                RawAssembler.MultRegisterByRegister,
+                RawAssembler.MultRegisterByRegister,
+                RawAssembler.MultRegisterByRegister);
         }
 
         /// <summary>
@@ -742,10 +769,37 @@ namespace XONEVirtualMachine.Compiler.Win64
                 generatedCode,
                 destination,
                 source,
-                RawAssembler.MultMemoryRegisterWithOffsetToRegister,
-                RawAssembler.MultMemoryRegisterWithOffsetToRegister,
-                RawAssembler.MultMemoryRegisterWithOffsetToRegister,
-                RawAssembler.MultMemoryRegisterWithOffsetToRegister);
+                RawAssembler.MultMemoryRegisterWithOffsetByRegister,
+                RawAssembler.MultMemoryRegisterWithOffsetByRegister,
+                RawAssembler.MultMemoryRegisterWithOffsetByRegister,
+                RawAssembler.MultMemoryRegisterWithOffsetByRegister);
+        }
+
+        /// <summary>
+        /// Multiplies the second register by the first
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Mult(IList<byte> generatedCode, FloatRegister destination, FloatRegister source)
+        {
+            RawAssembler.MultRegisterByRegister(generatedCode, destination, source);
+        }
+
+        /// <summary>
+        /// Multiplies the memory operand by the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source memory</param>
+        public static void Mult(IList<byte> generatedCode, FloatRegister destination, MemoryOperand source)
+        {
+            GenerateSourceMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.MultMemoryRegisterWithIntOffsetByRegister,
+                RawAssembler.MultMemoryRegisterWithIntOffsetByRegister);
         }
 
         /// <summary>
@@ -780,6 +834,33 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 RawAssembler.DivMemoryRegisterWithOffsetFromRegister(generatedCode, Register.AX, source.Register.ExtendedRegister, source.Offset);
             }
+        }
+
+        /// <summary>
+        /// Divides the second register by the first
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Div(IList<byte> generatedCode, FloatRegister destination, FloatRegister source)
+        {
+            RawAssembler.DivRegisterFromRegister(generatedCode, destination, source);
+        }
+
+        /// <summary>
+        /// Divides the memory operand by the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="source">The source memory</param>
+        public static void Div(IList<byte> generatedCode, FloatRegister destination, MemoryOperand source)
+        {
+            GenerateSourceMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.DivMemoryRegisterWithIntOffsetFromRegister,
+                RawAssembler.DivMemoryRegisterWithIntOffsetFromRegister);
         }
 
         /// <summary>
@@ -999,6 +1080,33 @@ namespace XONEVirtualMachine.Compiler.Win64
                 RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
                 RawAssembler.CompareMemoryRegisterWithOffsetToRegister,
                 RawAssembler.CompareMemoryRegisterWithOffsetToRegister);
+        }
+
+        /// <summary>
+        /// Compares the second register to the first register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void Compare(IList<byte> generatedCode, FloatRegister destination, FloatRegister source)
+        {
+            RawAssembler.CompareRegisterToRegister(generatedCode, destination, source);
+        }
+
+        /// <summary>
+        /// Compares the memory operand to the register
+        /// </summary>
+        /// <param name="generatedCode">The generated code</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source memory</param>
+        public static void Compare(IList<byte> generatedCode, FloatRegister destination, MemoryOperand source)
+        {
+            GenerateSourceMemoryInstruction(
+                generatedCode,
+                destination,
+                source,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset,
+                RawAssembler.CompareRegisterToMemoryRegisterWithOffset);
         }
 
         /// <summary>

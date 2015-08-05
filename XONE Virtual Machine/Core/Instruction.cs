@@ -34,8 +34,8 @@ namespace XONEVirtualMachine.Core
         BranchGreaterThan,
         BranchGreaterOrEqual,
         BranchLessThan,
-        BranchLessOrEqual
-	}
+        BranchLessOrEqual,
+    }
 
 	/// <summary>
 	/// Represents an instruction

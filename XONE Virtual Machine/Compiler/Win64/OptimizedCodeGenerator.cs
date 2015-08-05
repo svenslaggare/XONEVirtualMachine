@@ -390,6 +390,27 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     Assembler.Add,
                                     Assembler.Add);
                                 break;
+                            case OpCodes.SubFloat:
+                                virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                    op1Reg,
+                                    op2Reg,
+                                    Assembler.Sub,
+                                    Assembler.Sub);
+                                break;
+                            case OpCodes.MulFloat:
+                                virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                    op1Reg,
+                                    op2Reg,
+                                    Assembler.Mult,
+                                    Assembler.Mult);
+                                break;
+                            case OpCodes.DivFloat:
+                                virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                    op1Reg,
+                                    op2Reg,
+                                    Assembler.Div,
+                                    Assembler.Div);
+                                break;
                         }
 
                         if (op1Reg != storeReg)
@@ -610,12 +631,24 @@ namespace XONEVirtualMachine.Compiler.Win64
                         var op1Reg = GetUseRegister(1);
 
                         //Compare
-                        virtualAssembler.GenerateTwoRegistersInstruction(
-                            op1Reg,
-                            op2Reg,
-                            Assembler.Compare,
-                            Assembler.Compare,
-                            Assembler.Compare);
+                        if (opType.IsPrimitiveType(PrimitiveTypes.Float))
+                        {
+                            unsignedComparison = true;
+                            virtualAssembler.GenerateTwoRegistersFloatInstruction(
+                                op1Reg,
+                                op2Reg,
+                                Assembler.Compare,
+                                Assembler.Compare);
+                        }
+                        else
+                        {
+                            virtualAssembler.GenerateTwoRegistersInstruction(
+                                op1Reg,
+                                op2Reg,
+                                Assembler.Compare,
+                                Assembler.Compare,
+                                Assembler.Compare);
+                        }
 
                         JumpCondition condition = JumpCondition.Always;
                         switch (instruction.OpCode)

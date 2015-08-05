@@ -423,7 +423,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void MoveRegisterToMemoryRegisterWithIntOffset(
             IList<byte> codeGenerator,
             Register destinationMemoryRegister,
-            int offset, ExtendedRegister source)
+            int offset,
+            ExtendedRegister source)
         {
             if (destinationMemoryRegister != Register.SP)
             {
@@ -455,7 +456,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void MoveRegisterToMemoryRegisterWithIntOffset(
             IList<byte> codeGenerator,
             ExtendedRegister destinationMemoryRegister,
-            int offset, ExtendedRegister source)
+            int offset,
+            ExtendedRegister source)
         {
             codeGenerator.Add(0x4d);
             codeGenerator.Add(0x89);
@@ -477,7 +479,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void MoveRegisterToMemoryRegisterWithIntOffset(
             IList<byte> codeGenerator,
             ExtendedRegister destinationMemoryRegister,
-            int offset, Register source)
+            int offset,
+            Register source)
         {
             codeGenerator.Add(0x49);
             codeGenerator.Add(0x89);
@@ -774,7 +777,16 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             codeGenerator.Add(0x48);
             codeGenerator.Add(0xc7);
-            codeGenerator.Add((byte)(0x80 | (byte)memoryRegister));
+           
+            if (memoryRegister != Register.SP)
+            {
+                codeGenerator.Add((byte)(0x80 | (byte)memoryRegister));
+            }
+            else
+            {
+                codeGenerator.Add(0x84);
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1043,12 +1055,18 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="source">The source register</param>
         public static void AddRegisterToMemoryRegisterWithOffset(
             IList<byte> codeGenerator,
-            Register destinationMemoryRegister, int offset,
+            Register destinationMemoryRegister,
+            int offset,
             Register source)
         {
             codeGenerator.Add(0x48);
             codeGenerator.Add(0x01);
             codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
+
+            if (destinationMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1065,12 +1083,18 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="source">The source register</param>
         public static void AddRegisterToMemoryRegisterWithOffset(
             IList<byte> codeGenerator,
-            Register destinationMemoryRegister, int offset,
+            Register destinationMemoryRegister,
+            int offset,
             ExtendedRegister source)
         {
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x01);
             codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
+
+            if (destinationMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1109,7 +1133,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="source">The source register</param>
         public static void AddRegisterToMemoryRegisterWithOffset(
             IList<byte> codeGenerator,
-            ExtendedRegister destinationMemoryRegister, int offset,
+            ExtendedRegister destinationMemoryRegister,
+            int offset,
             Register source)
         {
             codeGenerator.Add(0x49);
@@ -1132,11 +1157,17 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void AddMemoryRegisterWithOffsetToRegister(
             IList<byte> codeGenerator,
             Register destination,
-            Register sourceMemoryRegister, int offset)
+            Register sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x48);
-            codeGenerator.Add(0x03);
+            codeGenerator.Add(0x03);           
             codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1154,11 +1185,17 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void AddMemoryRegisterWithOffsetToRegister(
             IList<byte> codeGenerator,
             ExtendedRegister destination,
-            Register sourceMemoryRegister, int offset)
+            Register sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x03);
             codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1441,6 +1478,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x29);
             codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
 
+            if (destinationMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(offset))
             {
                 codeGenerator.Add(component);
@@ -1462,6 +1504,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x29);
             codeGenerator.Add((byte)(0x80 | (byte)destinationMemoryRegister | (byte)source << 3));
+
+            if (destinationMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1529,6 +1576,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x2b);
             codeGenerator.Add((byte)(0x80 | (byte)destination | (byte)sourceMemoryRegister << 3));
 
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(offset))
             {
                 codeGenerator.Add(component);
@@ -1550,6 +1602,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x2b);
             codeGenerator.Add((byte)(0x80 | (byte)destination | (byte)sourceMemoryRegister << 3));
+
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1703,13 +1760,71 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Subtracts the memory from the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void SubMemoryRegisterWithIntOffsetFromRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            Register sourceMemoryRegister, int offset)
+        {
+            if (sourceMemoryRegister != Register.SP)
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x5c);
+                codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+            }
+            else
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x5c);
+                codeGenerator.Add((byte)(0x84 | (byte)destination << 3));
+                codeGenerator.Add(0x24);
+            }
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Subtracts the memory from the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void SubMemoryRegisterWithIntOffsetFromRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            ExtendedRegister sourceMemoryRegister, int offset)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x41);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x5c);
+            codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
         /// Multiplies the first register by the second
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
         /// <param name="is32bits">Indicates if a 32-bits register</param>
-        public static void MultRegisterToRegister(IList<byte> codeGenerator, Register destination, Register source, bool is32bits = false)
+        public static void MultRegisterByRegister(IList<byte> codeGenerator, Register destination, Register source, bool is32bits = false)
         {
             if (!is32bits)
             {
@@ -1727,7 +1842,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
-        public static void MultRegisterToRegister(IList<byte> codeGenerator, ExtendedRegister destination, ExtendedRegister source)
+        public static void MultRegisterByRegister(IList<byte> codeGenerator, ExtendedRegister destination, ExtendedRegister source)
         {
             codeGenerator.Add(0x4d);
             codeGenerator.Add(0x0f);
@@ -1741,7 +1856,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
-        public static void MultRegisterToRegister(IList<byte> codeGenerator, ExtendedRegister destination, Register source)
+        public static void MultRegisterByRegister(IList<byte> codeGenerator, ExtendedRegister destination, Register source)
         {
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x0f);
@@ -1755,7 +1870,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
-        public static void MultRegisterToRegister(IList<byte> codeGenerator, Register destination, ExtendedRegister source)
+        public static void MultRegisterByRegister(IList<byte> codeGenerator, Register destination, ExtendedRegister source)
         {
             codeGenerator.Add(0x49);
             codeGenerator.Add(0x0f);
@@ -1770,16 +1885,22 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination memory register</param>
         /// <param name="offset">The memory offset</param>
         /// <param name="sourceMemoryRegister">The source register</param>
-        public static void MultMemoryRegisterWithOffsetToRegister(
+        public static void MultMemoryRegisterWithOffsetByRegister(
             IList<byte> codeGenerator,
             Register destination,
-            Register sourceMemoryRegister, int offset)
+            Register sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x48);
             codeGenerator.Add(0x0f);
             codeGenerator.Add(0xaf);
             codeGenerator.Add((byte)(0x80 | (byte)destination << 3 | (byte)sourceMemoryRegister));
 
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(offset))
             {
                 codeGenerator.Add(component);
@@ -1793,16 +1914,22 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination memory register</param>
         /// <param name="offset">The memory offset</param>
         /// <param name="sourceMemoryRegister">The source register</param>
-        public static void MultMemoryRegisterWithOffsetToRegister(
+        public static void MultMemoryRegisterWithOffsetByRegister(
             IList<byte> codeGenerator,
             ExtendedRegister destination,
-            Register sourceMemoryRegister, int offset)
+            Register sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x4c);
             codeGenerator.Add(0x0f);
             codeGenerator.Add(0xaf);
             codeGenerator.Add((byte)(0x80 | (byte)destination << 3 | (byte)sourceMemoryRegister));
 
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(offset))
             {
                 codeGenerator.Add(component);
@@ -1816,10 +1943,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination memory register</param>
         /// <param name="offset">The memory offset</param>
         /// <param name="sourceMemoryRegister">The source register</param>
-        public static void MultMemoryRegisterWithOffsetToRegister(
+        public static void MultMemoryRegisterWithOffsetByRegister(
             IList<byte> codeGenerator,
             ExtendedRegister destination,
-            ExtendedRegister sourceMemoryRegister, int offset)
+            ExtendedRegister sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x4d);
             codeGenerator.Add(0x0f);
@@ -1839,10 +1967,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="destination">The destination memory register</param>
         /// <param name="offset">The memory offset</param>
         /// <param name="sourceMemoryRegister">The source register</param>
-        public static void MultMemoryRegisterWithOffsetToRegister(
+        public static void MultMemoryRegisterWithOffsetByRegister(
             IList<byte> codeGenerator,
             Register destination,
-            ExtendedRegister sourceMemoryRegister, int offset)
+            ExtendedRegister sourceMemoryRegister,
+            int offset)
         {
             codeGenerator.Add(0x49);
             codeGenerator.Add(0x0f);
@@ -1861,12 +1990,70 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="codeGenerator">The coder generator</param>
         /// <param name="destination">The destination register</param>
         /// <param name="source">The source register</param>
-        public static void MultRegisterToRegister(IList<byte> codeGenerator, FloatRegister destination, FloatRegister source)
+        public static void MultRegisterByRegister(IList<byte> codeGenerator, FloatRegister destination, FloatRegister source)
         {
             codeGenerator.Add(0xf3);
             codeGenerator.Add(0x0f);
             codeGenerator.Add(0x59);
             codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Multiplies the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void MultMemoryRegisterWithIntOffsetByRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            Register sourceMemoryRegister, int offset)
+        {
+            if (sourceMemoryRegister != Register.SP)
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x59);
+                codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+            }
+            else
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x59);
+                codeGenerator.Add((byte)(0x84 | (byte)destination << 3));
+                codeGenerator.Add(0x24);
+            }
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Multiplies the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void MultMemoryRegisterWithIntOffsetByRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            ExtendedRegister sourceMemoryRegister, int offset)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x41);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x59);
+            codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
         }
 
         /// <summary>
@@ -1920,7 +2107,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         public static void DivMemoryRegisterWithOffsetFromRegister(
             IList<byte> codeGenerator,
             Register destination,
-            Register sourceMemoryRegister, int offset)
+            Register sourceMemoryRegister,
+            int offset)
         {
             if (destination != Register.AX)
             {
@@ -1930,6 +2118,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x48);
             codeGenerator.Add(0xf7);
             codeGenerator.Add((byte)(0xb8 | (byte)sourceMemoryRegister | (byte)((byte)destination << 3)));
+
+            if (sourceMemoryRegister == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(offset))
             {
@@ -1976,6 +2169,64 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x0f);
             codeGenerator.Add(0x5e);
             codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Divides the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void DivMemoryRegisterWithIntOffsetFromRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            Register sourceMemoryRegister, int offset)
+        {
+            if (sourceMemoryRegister != Register.SP)
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x5e);
+                codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+            }
+            else
+            {
+                codeGenerator.Add(0xf3);
+                codeGenerator.Add(0x0f);
+                codeGenerator.Add(0x5e);
+                codeGenerator.Add((byte)(0x84 | (byte)destination << 3));
+                codeGenerator.Add(0x24);
+            }
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Divides the memory by the first register where the memory address is in the second register + offset
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="destination">The destination memory register</param>
+        /// <param name="offset">The memory offset</param>
+        /// <param name="sourceMemoryRegister">The source register</param>
+        public static void DivMemoryRegisterWithIntOffsetFromRegister(
+            IList<byte> codeGenerator,
+            FloatRegister destination,
+            ExtendedRegister sourceMemoryRegister, int offset)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x41);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x5e);
+            codeGenerator.Add((byte)(0x80 | (byte)sourceMemoryRegister | (byte)destination << 3));
+
+            foreach (var component in BitConverter.GetBytes(offset))
+            {
+                codeGenerator.Add(component);
+            }
         }
 
         /// <summary>
@@ -2157,6 +2408,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x3b);
             codeGenerator.Add((byte)(0x80 | (byte)register2Memory | (byte)register1 << 3));
 
+            if (register2Memory == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(register2MemoryOffset))
             {
                 codeGenerator.Add(component);
@@ -2225,6 +2481,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x48);
             codeGenerator.Add(0x39);
             codeGenerator.Add((byte)(0x80 | (byte)register1Memory | (byte)register2 << 3));
+
+            if (register1Memory == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
 
             foreach (var component in BitConverter.GetBytes(register1MemoryOffset))
             {
@@ -2295,6 +2556,11 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x3b);
             codeGenerator.Add((byte)(0x80 | (byte)register2Memory | (byte)register1 << 3));
 
+            if (register2Memory == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(register2MemoryOffset))
             {
                 codeGenerator.Add(component);
@@ -2318,7 +2584,81 @@ namespace XONEVirtualMachine.Compiler.Win64
             codeGenerator.Add(0x39);
             codeGenerator.Add((byte)(0x80 | (byte)register1Memory | (byte)register2 << 3));
 
+            if (register1Memory == Register.SP)
+            {
+                codeGenerator.Add(0x24);
+            }
+
             foreach (var component in BitConverter.GetBytes(register1MemoryOffset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Compares the two registers
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2">The second register</param>
+        public static void CompareRegisterToRegister(IList<byte> codeGenerator, FloatRegister register1, FloatRegister register2)
+        {
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x2e);
+            codeGenerator.Add((byte)(0xc0 | (byte)register2 | (byte)((byte)register1 << 3)));
+        }
+
+        /// <summary>
+        /// Compares a register and a memory address
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2Memory">The register with the address of the second operand</param>
+        /// <param name="register2MemoryOffset">The memory offset</param>
+        public static void CompareRegisterToMemoryRegisterWithOffset(
+            IList<byte> codeGenerator,
+            FloatRegister register1,
+            Register register2,
+            int register2MemoryOffset)
+        {
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x2e);
+
+            if (register2 != Register.SP)
+            {
+                codeGenerator.Add((byte)(0x80 | (byte)register2 | (byte)((byte)register1 << 3)));
+            }
+            else
+            {
+                codeGenerator.Add((byte)(0x84 | (byte)register1 << 3));
+                codeGenerator.Add(0x24);
+            }
+
+            foreach (var component in BitConverter.GetBytes(register2MemoryOffset))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
+        /// Compares a register and a memory address
+        /// </summary>
+        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="register1">The first register</param>
+        /// <param name="register2Memory">The register with the address of the second operand</param>
+        /// <param name="register2MemoryOffset">The memory offset</param>
+        public static void CompareRegisterToMemoryRegisterWithOffset(
+            IList<byte> codeGenerator,
+            FloatRegister register1,
+            ExtendedRegister register2,
+            int register2MemoryOffset)
+        {
+            codeGenerator.Add(0x41);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x2e);
+            codeGenerator.Add((byte)(0x80 | (byte)register2 | (byte)((byte)register1 << 3)));
+
+            foreach (var component in BitConverter.GetBytes(register2MemoryOffset))
             {
                 codeGenerator.Add(component);
             }
