@@ -64,11 +64,12 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 this.LocalVirtualRegisters = new ReadOnlyCollection<VirtualRegister>(localRegs);
 
-                int numRegs = virtualMachine.Settings.GetSetting<int>("NumIntRegisters") ?? 7;
+                var numIntRegs = virtualMachine.Settings.GetSetting<int>("NumIntRegisters");
+                var numFloatRegs = virtualMachine.Settings.GetSetting<int>("NumFloatRegisters");
 
                 this.RegisterAllocation = LinearScanRegisterAllocation.Allocate(
                     LivenessAnalysis.ComputeLiveness(VirtualControlFlowGraph.FromBasicBlocks(
-                        VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))), numRegs);
+                        VirtualBasicBlock.CreateBasicBlocks(this.VirtualInstructions))), numIntRegs, numFloatRegs);
 
                 this.VirtualAssembler = new VirtualAssembler(this);
             }

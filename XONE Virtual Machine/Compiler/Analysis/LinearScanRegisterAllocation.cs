@@ -192,14 +192,18 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// Allocates registers
         /// </summary>
         /// <param name="liveIntervals">The live intervals</param>
-        /// <param name="numRegisters">The number of registers</param>
-        public static RegisterAllocation Allocate(IList<LiveInterval> liveIntervals, int numRegisters = 7)
+        /// <param name="numIntRegisters">The number of int registers</param>
+        /// <param name="numFloatRegisters">The number of float registers</param>
+        public static RegisterAllocation Allocate(IList<LiveInterval> liveIntervals, int? numIntRegisters = null, int? numFloatRegisters = null)
         {
             var allocatedRegisteres = new Dictionary<LiveInterval, int>();
             var spilledRegisters = new List<LiveInterval>();
 
+            numIntRegisters = numIntRegisters ?? 7;
+            numFloatRegisters = numFloatRegisters ?? 5;
+
             //If we do not got any registers, spill all.
-            if (numRegisters == 0)
+            if (numIntRegisters == 0 || numFloatRegisters == 0)
             {
                 foreach (var interval in liveIntervals)
                 {
@@ -209,24 +213,58 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 return new RegisterAllocation(allocatedRegisteres, spilledRegisters);
             }
 
-            var freeRegisters = new SortedSet<int>(Enumerable.Range(0, numRegisters));
+            var freeIntRegisters = new SortedSet<int>(Enumerable.Range(0, numIntRegisters.Value));
+            var freeFloatRegisters = new SortedSet<int>(Enumerable.Range(0, numFloatRegisters.Value));
+
             var active = new SortedSet<LiveInterval>(new CompareByEndPoint());
             liveIntervals = liveIntervals.OrderBy(x => x.Start).ToList();
 
             foreach (var interval in liveIntervals)
             {
-                ExplireOldIntervals(allocatedRegisteres, active, freeRegisters, interval);
+                ExplireOldIntervals(
+                    allocatedRegisteres,
+                    active,
+                    freeIntRegisters,
+                    freeFloatRegisters,
+                    interval);
 
-                if (active.Count == numRegisters)
+                if (interval.VirtualRegister.Type == VirtualRegisterType.Float)
                 {
-                    SplitAtInterval(allocatedRegisteres, spilledRegisters, active, interval);
+                    if (active.Where(x => x.VirtualRegister.Type == VirtualRegisterType.Float).Count() == numFloatRegisters)
+                    {
+                        SplitAtInterval(
+                            allocatedRegisteres,
+                            spilledRegisters,
+                            active,
+                            interval,
+                            VirtualRegisterType.Float);
+                    }
+                    else
+                    {
+                        var freeReg = freeFloatRegisters.First();
+                        freeFloatRegisters.Remove(freeReg);
+                        allocatedRegisteres.Add(interval, freeReg);
+                        active.Add(interval);
+                    }
                 }
                 else
                 {
-                    var freeReg = freeRegisters.First();
-                    freeRegisters.Remove(freeReg);
-                    allocatedRegisteres.Add(interval, freeReg);
-                    active.Add(interval);
+                    if (active.Where(x => x.VirtualRegister.Type == VirtualRegisterType.Integer).Count() == numIntRegisters)
+                    {
+                        SplitAtInterval(
+                            allocatedRegisteres,
+                            spilledRegisters,
+                            active,
+                            interval,
+                            VirtualRegisterType.Integer);
+                    }
+                    else
+                    {
+                        var freeReg = freeIntRegisters.First();
+                        freeIntRegisters.Remove(freeReg);
+                        allocatedRegisteres.Add(interval, freeReg);
+                        active.Add(interval);
+                    }
                 }
             }
 
@@ -238,12 +276,14 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// </summary>
         /// <param name="allocatedRegisteres">The allocated registers</param>
         /// <param name="active">The active registers</param>
-        /// <param name="freeRegisters">The free registers</param>
+        /// <param name="freeIntRegisters">The free int registers</param>
+        /// <param name="freeFloatRegisters">The free float registers</param>
         /// <param name="currentInterval">The current intervals</param>
         private static void ExplireOldIntervals(
             IDictionary<LiveInterval, int> allocatedRegisteres,
             ISet<LiveInterval> active,
-            ISet<int> freeRegisters,
+            ISet<int> freeIntRegisters,
+            ISet<int> freeFloatRegisters,
             LiveInterval currentInterval)
         {
             var toRemove = new List<LiveInterval>();
@@ -256,7 +296,15 @@ namespace XONEVirtualMachine.Compiler.Analysis
                 }
 
                 toRemove.Add(interval);
-                freeRegisters.Add(allocatedRegisteres[interval]);
+                
+                if (interval.VirtualRegister.Type == VirtualRegisterType.Float)
+                {
+                    freeFloatRegisters.Add(allocatedRegisteres[interval]);
+                }
+                else
+                {
+                    freeIntRegisters.Add(allocatedRegisteres[interval]);
+                }
             }
 
             foreach (var interval in toRemove)
@@ -272,13 +320,15 @@ namespace XONEVirtualMachine.Compiler.Analysis
         /// <param name="spilledRegisters">The spilled registers</param>
         /// <param name="active">The active registers</param>
         /// <param name="currentInterval">The current intervals</param>
+        /// <param name="registerType">The register type</param>
         private static void SplitAtInterval(
             IDictionary<LiveInterval, int> allocatedRegisteres,
             IList<LiveInterval> spilledRegisters,
             ISet<LiveInterval> active,
-            LiveInterval currentInterval)
+            LiveInterval currentInterval,
+            VirtualRegisterType registerType)
         {
-            var spill = active.Last();
+            var spill = active.Where(x => x.VirtualRegister.Type == registerType).Last();
 
             if (spill.End > currentInterval.End)
             {

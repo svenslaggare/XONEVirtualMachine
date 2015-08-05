@@ -324,6 +324,11 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             var other = (HardwareRegister)obj;
             
+            if (this.IsInt != other.IsInt)
+            {
+                return false;
+            }
+
             if (this.IsInt)
             {
                 return this.IntRegister == other.IntRegister;
@@ -331,7 +336,6 @@ namespace XONEVirtualMachine.Compiler.Win64
             else
             {
                 return this.FloatRegister == other.FloatRegister;
-
             }
         }
 
@@ -342,12 +346,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         {
             if (this.IsInt)
             {
-                return this.IntRegister.GetHashCode();
+                return this.IsInt.GetHashCode() + 31 * this.IntRegister.GetHashCode();
             }
             else
             {
-                return this.FloatRegister.GetHashCode();
-
+                return this.IsInt.GetHashCode() + 31 * this.FloatRegister.GetHashCode();
             }
         }
     }

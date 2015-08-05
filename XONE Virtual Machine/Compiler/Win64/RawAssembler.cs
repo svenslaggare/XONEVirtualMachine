@@ -2486,7 +2486,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <summary>
         /// Jumps if less or equal to the target relative the current instruction. Uses unsigned comparison.
         /// </summary>
-        /// <param name="codeGenerator">The coder generator</param>
+        /// <param name="codeGenerator">The code generator</param>
         /// <param name="target">The target</param>
         public static void JumpLessThanOrEqualUnsigned(IList<byte> codeGenerator, int target)
         {
@@ -2497,6 +2497,36 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 codeGenerator.Add(component);
             }
+        }
+
+        /// <summary>
+        /// Converts the second register into a float and stores the result in the first register
+        /// </summary>
+        /// <param name="codeGenerator">The code generator</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void ConvertIntToFloat(IList<byte> codeGenerator, FloatRegister destination, Register source)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x2a);
+            codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
+        }
+
+        /// <summary>
+        /// Converts the second register into an int and stores the result in the first register
+        /// </summary>
+        /// <param name="codeGenerator">The code generator</param>
+        /// <param name="destination">The destination</param>
+        /// <param name="source">The source</param>
+        public static void ConvertFloatToInt(IList<byte> codeGenerator, Register destination, FloatRegister source)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x48);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x2c);
+            codeGenerator.Add((byte)(0xc0 | (byte)source | (byte)((byte)destination << 3)));
         }
     }
 }
