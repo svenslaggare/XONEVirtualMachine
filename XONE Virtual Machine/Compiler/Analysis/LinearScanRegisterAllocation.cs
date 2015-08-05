@@ -203,7 +203,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
             numFloatRegisters = numFloatRegisters ?? 5;
 
             //If we do not got any registers, spill all.
-            if (numIntRegisters == 0 || numFloatRegisters == 0)
+            if (numIntRegisters + numIntRegisters == 0)
             {
                 foreach (var interval in liveIntervals)
                 {
@@ -228,43 +228,38 @@ namespace XONEVirtualMachine.Compiler.Analysis
                     freeFloatRegisters,
                     interval);
 
-                if (interval.VirtualRegister.Type == VirtualRegisterType.Float)
+                var regType = interval.VirtualRegister.Type;
+
+                var activeOfType = active.Where(x => x.VirtualRegister.Type == regType);
+                int maxRegs = 0;
+                SortedSet<int> freeRegs;
+
+                if (regType == VirtualRegisterType.Float)
                 {
-                    if (active.Where(x => x.VirtualRegister.Type == VirtualRegisterType.Float).Count() == numFloatRegisters)
-                    {
-                        SplitAtInterval(
-                            allocatedRegisteres,
-                            spilledRegisters,
-                            active,
-                            interval,
-                            VirtualRegisterType.Float);
-                    }
-                    else
-                    {
-                        var freeReg = freeFloatRegisters.First();
-                        freeFloatRegisters.Remove(freeReg);
-                        allocatedRegisteres.Add(interval, freeReg);
-                        active.Add(interval);
-                    }
+                    maxRegs = numFloatRegisters.Value;
+                    freeRegs = freeFloatRegisters;
                 }
                 else
                 {
-                    if (active.Where(x => x.VirtualRegister.Type == VirtualRegisterType.Integer).Count() == numIntRegisters)
-                    {
-                        SplitAtInterval(
-                            allocatedRegisteres,
-                            spilledRegisters,
-                            active,
-                            interval,
-                            VirtualRegisterType.Integer);
-                    }
-                    else
-                    {
-                        var freeReg = freeIntRegisters.First();
-                        freeIntRegisters.Remove(freeReg);
-                        allocatedRegisteres.Add(interval, freeReg);
-                        active.Add(interval);
-                    }
+                    maxRegs = numIntRegisters.Value;
+                    freeRegs = freeIntRegisters;
+                }
+
+                if (activeOfType.Count() == maxRegs)
+                {
+                    SplitAtInterval(
+                        allocatedRegisteres,
+                        spilledRegisters,
+                        active,
+                        interval,
+                        regType);
+                }
+                else
+                {
+                    var freeReg = freeRegs.First();
+                    freeRegs.Remove(freeReg);
+                    allocatedRegisteres.Add(interval, freeReg);
+                    active.Add(interval);
                 }
             }
 
