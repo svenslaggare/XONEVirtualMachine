@@ -60,7 +60,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 IList<int> localRegs;
                 this.VirtualInstructions = new ReadOnlyCollection<VirtualInstruction>(
-                    VirtualRegisters.Create(virtualMachine, function, out localRegs));
+                    VirtualRegisterIR.Create(virtualMachine, function, out localRegs));
 
                 this.LocalVirtualRegisters = new ReadOnlyCollection<int>(localRegs);
 

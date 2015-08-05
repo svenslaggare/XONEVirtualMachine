@@ -11,7 +11,7 @@ namespace XONEVirtualMachine.Compiler.Analysis
     /// <summary>
     /// Represents an instruction using virtual registers
     /// </summary>
-    public class VirtualInstruction
+    public struct VirtualInstruction
     {
         /// <summary>
         /// The instruction
@@ -62,9 +62,88 @@ namespace XONEVirtualMachine.Compiler.Analysis
     }
 
     /// <summary>
+    /// The types for virtual registers
+    /// </summary>
+    public enum VirtualRegisterType : byte
+    {
+        Integer,
+        Float
+    }
+
+    /// <summary>
+    /// Represents a virtual register
+    /// </summary>
+    public struct VirtualRegister
+    {
+        /// <summary>
+        /// The type of the register
+        /// </summary>
+        public VirtualRegisterType Type { get; }
+
+        /// <summary>
+        /// The register number
+        /// </summary>
+        public int Number { get;}
+
+        /// <summary>
+        /// Creates a new virtual register
+        /// </summary>
+        /// <param name="type">The type of the register</param>
+        /// <param name="number">The register number</param>
+        public VirtualRegister(VirtualRegisterType type, int number)
+        {
+            this.Type = type;
+            this.Number = number;
+        }
+
+        /// <summary>
+        /// Checks if lhs == rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator ==(VirtualRegister lhs, VirtualRegister rhs)
+        {
+            return lhs.Type == rhs.Type && lhs.Number == rhs.Number;
+        }
+
+        /// <summary>
+        /// Checks if lhs != rhs
+        /// </summary>
+        /// <param name="lhs">The left hand side</param>
+        /// <param name="rhs">The right hand side</param>
+        public static bool operator !=(VirtualRegister lhs, VirtualRegister rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        /// <summary>
+        /// Checks if the current object is equal to the given
+        /// </summary>
+        /// <param name="obj">The object</param>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is VirtualRegister))
+            {
+                return false;
+            }
+
+            var other = (VirtualRegister)obj;
+            return this == other;
+        }
+
+        /// <summary>
+        /// Computes the hash code
+        /// </summary>
+        public override int GetHashCode()
+        {
+            return this.Type.GetHashCode() + 31 * this.Number.GetHashCode();
+        }
+    }
+
+    /// <summary>
     /// Represents an IR using virtual registers
     /// </summary>
-    public static class VirtualRegisters
+    public static class VirtualRegisterIR
     {
         /// <summary>
         /// Creates the virtual registers IR for the given instructions

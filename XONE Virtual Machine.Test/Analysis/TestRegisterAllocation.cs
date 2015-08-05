@@ -26,7 +26,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 container.VirtualMachine.Verifier.VerifiyFunction(func);
 
-                var virtualInstructions = VirtualRegisters.Create(container.VirtualMachine, func);
+                var virtualInstructions = VirtualRegisterIR.Create(container.VirtualMachine, func);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
                     VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
@@ -50,7 +50,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 container.VirtualMachine.Verifier.VerifiyFunction(func);
 
-                var virtualInstructions = VirtualRegisters.Create(container.VirtualMachine, func);
+                var virtualInstructions = VirtualRegisterIR.Create(container.VirtualMachine, func);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
                     VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
@@ -74,7 +74,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 container.VirtualMachine.Verifier.VerifiyFunction(func);
 
-                var virtualInstructions = VirtualRegisters.Create(container.VirtualMachine, func);
+                var virtualInstructions = VirtualRegisterIR.Create(container.VirtualMachine, func);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
                     VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
@@ -98,7 +98,7 @@ namespace XONE_Virtual_Machine.Test.Analysis
 
                 container.VirtualMachine.Verifier.VerifiyFunction(func);
 
-                var virtualInstructions = VirtualRegisters.Create(container.VirtualMachine, func);
+                var virtualInstructions = VirtualRegisterIR.Create(container.VirtualMachine, func);
                 var virtualControlFlowGraph = VirtualControlFlowGraph.FromBasicBlocks(
                     VirtualBasicBlock.CreateBasicBlocks(new ReadOnlyCollection<VirtualInstruction>(virtualInstructions)));
 
