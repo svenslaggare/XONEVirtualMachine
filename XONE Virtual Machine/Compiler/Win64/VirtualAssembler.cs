@@ -450,9 +450,11 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// </summary>
         /// <param name="destination">The destination</param>
         /// <param name="sourceRegister">The source register</param>
+        /// <param name="skipIfSame">Indicates if the instruction will be skipped of destination == source.</param>
         public void GenerateTwoRegisterFixedDestinationInstruction(FloatRegister destination, VirtualRegister sourceRegister,
             Action<IList<byte>, FloatRegister, FloatRegister> inst1,
-            Action<IList<byte>, FloatRegister, MemoryOperand> inst2)
+            Action<IList<byte>, FloatRegister, MemoryOperand> inst2,
+            bool skipIfSame = false)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
             var regAlloc = compilationData.RegisterAllocation;
@@ -461,7 +463,18 @@ namespace XONEVirtualMachine.Compiler.Win64
             if (!opStack.HasValue)
             {
                 var opReg = this.GetFloatRegisterForVirtual(sourceRegister).Value;
-                inst1(generatedCode, destination, opReg);
+
+                if (skipIfSame)
+                {
+                    if (destination != opReg)
+                    {
+                        inst1(generatedCode, destination, opReg);
+                    }
+                }
+                else
+                {
+                    inst1(generatedCode, destination, opReg);
+                }
             }
             else
             {

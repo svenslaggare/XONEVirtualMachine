@@ -332,7 +332,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                        FloatRegister.XMM0,
                        returnValueRegister,
                        Assembler.Move,
-                       Assembler.Move);
+                       Assembler.Move,
+                       true);
                 }
                 else
                 {
