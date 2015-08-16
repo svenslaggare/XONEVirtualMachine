@@ -124,8 +124,8 @@ namespace XONEVirtualMachine.Compiler.Win64
                         }
                         else
                         {
-                            Assembler.Push(func.GeneratedCode, 0);
-                            Assembler.Pop(func.GeneratedCode, localReg.Value.FloatRegister);
+                            IntPtr valuePtr = virtualMachine.Compiler.MemoryManager.AllocateReadonly(0);
+                            RawAssembler.MoveMemoryToRegister(func.GeneratedCode, localReg.Value.FloatRegister, valuePtr.ToInt32());
                         }
                     }
                     else
@@ -206,15 +206,15 @@ namespace XONEVirtualMachine.Compiler.Win64
                     {
                         var storeReg = GetAssignRegister();
                         var storeRegister = virtualAssembler.GetFloatRegisterForVirtual(storeReg);
-                        int floatPattern = BitConverter.ToInt32(BitConverter.GetBytes(instruction.FloatValue), 0);
 
                         if (storeRegister.HasValue)
                         {
-                            Assembler.Push(generatedCode, floatPattern);
-                            Assembler.Pop(generatedCode, storeRegister.Value);
+                            IntPtr valuePtr = virtualMachine.Compiler.MemoryManager.AllocateReadonly(instruction.FloatValue);
+                            RawAssembler.MoveMemoryToRegister(generatedCode, storeRegister.Value, valuePtr.ToInt32());
                         }
                         else
                         {
+                            int floatPattern = BitConverter.ToInt32(BitConverter.GetBytes(instruction.FloatValue), 0);
                             var storeStackOffset = virtualAssembler.CalculateStackOffset(storeReg).Value;
                             Assembler.Move(generatedCode, new MemoryOperand(Register.BP, storeStackOffset), floatPattern);
                         }

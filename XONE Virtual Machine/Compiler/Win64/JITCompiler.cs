@@ -31,6 +31,17 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Returns the memory manager
+        /// </summary>
+        public MemoryManager MemoryManager
+        {
+            get
+            {
+                return this.memoryManager;
+            }
+        }
+
+        /// <summary>
         /// Returns the compilation data for the given function
         /// </summary>
         /// <param name="function">The function</param>
@@ -67,7 +78,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             }
 
             //Allocate native memory. The instructions will be copied later when all symbols has been resolved.
-            var memory = this.memoryManager.Allocate(function.GeneratedCode.Count);
+            var memory = this.memoryManager.AllocateCode(function.GeneratedCode.Count);
             function.Definition.SetEntryPoint(memory);
 
             return memory;
@@ -127,6 +138,27 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Resolves the native labels for the given function
+        /// </summary>
+        /// <param name="compilationData">The compilation data</param>
+        private void ResolveNativeLabels(CompilationData compilationData)
+        {
+            //var generatedCode = compilationData.Function.GeneratedCode;
+            //long entryPoint = compilationData.Function.Definition.EntryPoint.ToInt64();
+
+            //foreach (var nativeLabel in compilationData.UnresolvedNativeLabels)
+            //{
+            //    var source = nativeLabel.Key;
+            //    var target = nativeLabel.Value.ToInt64();
+
+            //    int nativeTarget = (int)(target - (entryPoint + source - 5));
+            //    NativeHelpers.SetInt(generatedCode, source, (int)target);
+            //}
+
+            //compilationData.UnresolvedNativeLabels.Clear();
+        }
+
+        /// <summary>
         /// Resolve the symbols for functions
         /// </summary>
         private void ResolveSymbols()
@@ -135,6 +167,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 this.ResolveCallTargets(function);
                 this.ResolveBranches(function);
+                this.ResolveNativeLabels(function);
                 NativeHelpers.CopyTo(
                     function.Function.Definition.EntryPoint,
                     function.Function.GeneratedCode);

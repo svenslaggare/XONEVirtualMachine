@@ -841,6 +841,26 @@ namespace XONEVirtualMachine.Compiler.Win64
         }
 
         /// <summary>
+        /// Moves the at the given memory address relative to the end of the current instruction to the given register
+        /// </summary>
+        /// <param name="codeGenerator">The code generator</param>
+        /// <param name="destination">The destination register</param>
+        /// <param name="relativeAddress">The relative address</param>
+        public static void MoveMemoryToRegister(IList<byte> codeGenerator, FloatRegister destination, int relativeAddress)
+        {
+            codeGenerator.Add(0xf3);
+            codeGenerator.Add(0x0f);
+            codeGenerator.Add(0x10);
+            codeGenerator.Add((byte)(0x04 | (byte)((byte)destination << 3)));
+            codeGenerator.Add(0x25);
+
+            foreach (var component in BitConverter.GetBytes(relativeAddress))
+            {
+                codeGenerator.Add(component);
+            }
+        }
+
+        /// <summary>
         /// Moves the content from memory where the address is in the second register to the first register
         /// </summary>
         /// <param name="codeGenerator">The coder generator</param>

@@ -26,17 +26,38 @@ namespace XONEVirtualMachine.Core
         }
 
         /// <summary>
+        /// Delegate for a '(Float) Void' function.
+        /// </summary>
+        delegate void FuncVoidArgFloat(float x);
+
+        /// <summary>
+        /// Prints the given value
+        /// </summary>
+        /// <param name="value">The value</param>
+        private static void Println(float value)
+        {
+            Console.WriteLine(value);
+        }
+
+        /// <summary>
         /// Adds the native library to the given VM
         /// </summary>
         /// <param name="virtualMachine">The virtual machine</param>
         public static void Add(VirtualMachine virtualMachine)
         {
             var intType = virtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Int);
+            var floatType = virtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Float);
             var voidType = virtualMachine.TypeProvider.GetPrimitiveType(PrimitiveTypes.Void);
 
             virtualMachine.Binder.Define(FunctionDefinition.NewExternal<FuncVoidArgInt>(
                 "std.println",
                 new List<VMType>() { intType },
+                voidType,
+                Println));
+
+            virtualMachine.Binder.Define(FunctionDefinition.NewExternal<FuncVoidArgFloat>(
+                "std.println",
+                new List<VMType>() { floatType },
                 voidType,
                 Println));
         }

@@ -18,6 +18,11 @@ namespace XONEVirtualMachine.Compiler
     public interface IJITCompiler : IDisposable
     {
         /// <summary>
+        /// Returns the memory manager
+        /// </summary>
+        MemoryManager MemoryManager { get; }
+
+        /// <summary>
         /// Returns the compilation data for the given function
         /// </summary>
         /// <param name="function">The function</param>

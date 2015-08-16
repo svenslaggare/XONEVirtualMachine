@@ -7,20 +7,20 @@ using System.Threading.Tasks;
 namespace XONEVirtualMachine.Compiler
 {
     /// <summary>
-    /// Represents a page that contains code
+    /// Represents a memory page
     /// </summary>
-    public class CodePage : IDisposable
+    public class MemoryPage : IDisposable
     {
         private readonly IntPtr start;
         private readonly int size;
         private int used;
 
         /// <summary>
-        /// Creates a new code page
+        /// Creates a new memory page
         /// </summary>
         /// <param name="start">The start of the code page</param>
         /// <param name="size">The size</param>
-        public CodePage(IntPtr start, int size)
+        public MemoryPage(IntPtr start, int size)
         {
             this.start = start;
             this.size = size;
@@ -28,7 +28,7 @@ namespace XONEVirtualMachine.Compiler
         }
 
         /// <summary>
-        /// Allocates memory of the give size in the code page
+        /// Allocates memory of the given size
         /// </summary>
         /// <param name="size">The size of the allocation</param>
         /// <returns>The start of the allocation or null if there is not enough room.</returns>

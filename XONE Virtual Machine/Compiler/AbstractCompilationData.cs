@@ -33,6 +33,11 @@ namespace XONEVirtualMachine.Compiler
         public IDictionary<int, UnresolvedBranchTarget> UnresolvedBranches { get; } = new Dictionary<int, UnresolvedBranchTarget>();
 
         /// <summary>
+        /// The unresolved native labels
+        /// </summary>
+        public IDictionary<int, IntPtr> UnresolvedNativeLabels { get; } = new Dictionary<int, IntPtr>();
+
+        /// <summary>
         /// Creates new compilation data
         /// </summary>
         /// <param name="function">The function</param>
