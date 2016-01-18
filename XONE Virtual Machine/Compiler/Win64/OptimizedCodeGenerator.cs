@@ -35,8 +35,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="callRegister">The register where the address will be stored in</param>
         private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Register callRegister = Register.AX)
         {
-            RawAssembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
-            RawAssembler.CallInRegister(generatedCode, callRegister);
+            Assembler.Move(generatedCode, callRegister, toCall.ToInt64());
+            Assembler.CallInRegister(generatedCode, callRegister);
         }
 
         /// <summary>
@@ -491,7 +491,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                                 funcToCall,
                                 generatedCode.Count));
 
-                            RawAssembler.Call(generatedCode, 0);
+                            Assembler.Call(generatedCode, 0);
                         }
                         else
                         {
@@ -551,7 +551,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         this.CreateEpilog(compilationData);
 
                         //Make the return
-                        RawAssembler.Return(generatedCode);
+                        Assembler.Return(generatedCode);
                     }
                     break;
                 case OpCodes.LoadArgument:

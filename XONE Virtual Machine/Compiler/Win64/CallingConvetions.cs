@@ -116,52 +116,46 @@ namespace XONEVirtualMachine.Compiler.Win64
                     compilationData,
                     compilationData.Function.Definition.Parameters);
 
-                RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
+                Assembler.Move(
                     generatedCode,
                     Register.AX,
-                    Register.BP,
-                    Assembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
+                    new MemoryOperand(Register.BP, Assembler.RegisterSize * (6 + stackArgumentIndex))); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     Register.AX); //mov [rbp+<arg offset>], rax
             }
 
             if (argumentIndex == 3)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     RegisterCallArguments.Argument3); //mov [rbp+<arg offset>], <reg arg 3>
             }
 
             if (argumentIndex == 2)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
-                    generatedCode,
-                    Register.BP,
-                    argStackOffset,
-                    RegisterCallArguments.Argument2); //mov [rbp+<arg offset>], <reg arg 2>
+                Assembler.Move(
+                     generatedCode,
+                     new MemoryOperand(Register.BP, argStackOffset),
+                     RegisterCallArguments.Argument2); //mov [rbp+<arg offset>], <reg arg 2>
             }
 
             if (argumentIndex == 1)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     RegisterCallArguments.Argument1); //mov [rbp+<arg offset>], <reg arg 1>
             }
 
             if (argumentIndex == 0)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     RegisterCallArguments.Argument0); //mov [rbp+<arg offset>], <reg arg 0>
             }
         }
@@ -183,52 +177,48 @@ namespace XONEVirtualMachine.Compiler.Win64
                     compilationData,
                     compilationData.Function.Definition.Parameters);
 
-                RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
+                Assembler.Move(
                     generatedCode,
                     Register.AX,
-                    Register.BP,
-                    Assembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
+                    new MemoryOperand(
+                        Register.BP,
+                        Assembler.RegisterSize * (6 + stackArgumentIndex))); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     Register.AX); //mov [rbp+<arg offset>], rax
             }
 
             if (argumentIndex == 3)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     FloatRegisterCallArguments.Argument3); //movss [rbp+<arg offset>], <reg arg 3>
             }
 
             if (argumentIndex == 2)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     FloatRegisterCallArguments.Argument2); //movss [rbp+<arg offset>], <reg arg 2>
             }
 
             if (argumentIndex == 1)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     FloatRegisterCallArguments.Argument1); //movss [rbp+<arg offset>], <reg arg 1>
             }
 
             if (argumentIndex == 0)
             {
-                RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+                Assembler.Move(
                     generatedCode,
-                    Register.BP,
-                    argStackOffset,
+                    new MemoryOperand(Register.BP, argStackOffset),
                     FloatRegisterCallArguments.Argument0); //movss [rbp+<arg offset>], <reg arg 0>
             }
         }
@@ -297,7 +287,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             {
                 //Move from the operand stack to the normal stack
                 operandStack.PopRegister(Register.AX);
-                RawAssembler.PushRegister(compilationData.Function.GeneratedCode, Register.AX);
+                Assembler.Push(compilationData.Function.GeneratedCode, Register.AX);
             }
             else
             {
@@ -405,7 +395,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
             if (numStackArgs > 0)
             {
-                RawAssembler.AddConstantToRegister(
+                Assembler.Add(
                     compilationData.Function.GeneratedCode,
                     Register.SP,
                     numStackArgs * Assembler.RegisterSize);

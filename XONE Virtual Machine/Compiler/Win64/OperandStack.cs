@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler;
 using SharpAssembler.x64;
 using XONEVirtualMachine.Core;
 
@@ -60,50 +61,15 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pops an operand from the operand stack to the given register
         /// </summary>
         /// <param name="register">The register to pop to</param>
-        public void PopRegister(Register register)
+        public void PopRegister(IntRegister register)
         {
             this.AssertNotEmpty();
 
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
-            RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
+            Assembler.Move(
                 this.function.GeneratedCode,
                 register,
-                Register.BP,
-                stackOffset); //mov <reg>, [rbp+<operand offset>]
-            this.operandTopIndex--;
-        }
-
-        /// <summary>
-        /// Pops an operand from the operand stack to the given register
-        /// </summary>
-        /// <param name="register">The register</param>
-        public void PopRegister(ExtendedRegister register)
-        {
-            this.AssertNotEmpty();
-
-            int stackOffset = GetStackOperandOffset(this.operandTopIndex);
-
-            if (RawAssembler.IsValidByteValue(stackOffset))
-            {
-                //mov <reg>, [rbp+<operand offset>]
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                    0x4c, 0x8b, (byte)(0x45 | ((byte)register << 3)), (byte)stackOffset
-                });
-            }
-            else
-            {
-                //mov <reg>, [rbp+<operand offset>]
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                    0x4c, 0x8b, (byte)(0x85 | ((byte)register << 3))
-                });
-
-                foreach (var component in BitConverter.GetBytes(stackOffset))
-                {
-                    this.function.GeneratedCode.Add(component);
-                }
-            }
+                new MemoryOperand(Register.BP, stackOffset)); //mov <reg>, [rbp+<operand offset>]
 
             this.operandTopIndex--;
         }
@@ -117,28 +83,10 @@ namespace XONEVirtualMachine.Compiler.Win64
             this.AssertNotEmpty();
 
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
-
-            if (RawAssembler.IsValidByteValue(stackOffset))
-            {
-                //movss <reg>, [rbp+<operand offset>]
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                    0xf3, 0x0f, 0x10, (byte)(0x45 | ((byte)register << 3)), (byte)stackOffset
-                });
-            }
-            else
-            {
-                //mov <reg>, [rbp+<operand offset>]
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                   0xf3, 0x0f, 0x10, (byte)(0x85 | ((byte)register << 3))
-                });
-
-                foreach (var component in BitConverter.GetBytes(stackOffset))
-                {
-                    this.function.GeneratedCode.Add(component);
-                }
-            }
+            Assembler.Move(
+                this.function.GeneratedCode,
+                register,
+                new MemoryOperand(Register.BP, stackOffset));
 
             this.operandTopIndex--;
         }
@@ -147,16 +95,15 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// Pushes the given register to the operand stack
         /// </summary>
         /// <param name="register">The register</param>
-        public void PushRegister(Register register)
+        public void PushRegister(IntRegister register)
         {
             this.operandTopIndex++;
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
 
             //mov [rbp+<operand offset>], <reg>
-            RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+            Assembler.Move(
                 this.function.GeneratedCode,
-                Register.BP,
-                stackOffset,
+                new MemoryOperand(Register.BP, stackOffset),
                 register);
         }
 
@@ -170,10 +117,9 @@ namespace XONEVirtualMachine.Compiler.Win64
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
 
             //movss [rbp+<operand offset>], <reg>
-            RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
+            Assembler.Move(
                 this.function.GeneratedCode,
-                Register.BP,
-                stackOffset,
+                new MemoryOperand(Register.BP, stackOffset),
                 register);
         }
 
@@ -187,30 +133,10 @@ namespace XONEVirtualMachine.Compiler.Win64
             int stackOffset = GetStackOperandOffset(this.operandTopIndex);
 
             //mov [rbp+<operand offset>], value
-            if (RawAssembler.IsValidByteValue(stackOffset))
-            {
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                    0x48, 0xc7, 0x45, (byte)stackOffset
-                });
-            }
-            else
-            {
-                this.function.GeneratedCode.AddRange(new byte[]
-                {
-                    0x48, 0xc7, 0x85
-                });
-
-                foreach (var component in BitConverter.GetBytes(stackOffset))
-                {
-                    function.GeneratedCode.Add(component);
-                }
-            }
-
-            foreach (var component in BitConverter.GetBytes(value))
-            {
-                function.GeneratedCode.Add(component);
-            }
+            Assembler.Move(
+                this.function.GeneratedCode,
+                new MemoryOperand(Register.BP, stackOffset),
+                value);
         }
     }
 }
