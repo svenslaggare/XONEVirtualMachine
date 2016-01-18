@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler.x64;
 using XONEVirtualMachine.Compiler.Analysis;
 using XONEVirtualMachine.Core;
 
@@ -65,7 +66,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             //Calculate the size of the stack aligned to 16 bytes
             var def = function.Definition;
             int neededStackSize =
-                RawAssembler.RegisterSize
+                Assembler.RegisterSize
                 * (def.Parameters.Count + compilationData.RegisterAllocation.NumSpilledRegisters);
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
@@ -118,23 +119,24 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                     if (localReg.HasValue)
                     {
-                        if (localReg.Value.IsInt)
+                        switch (localReg.Value.Type)
                         {
-                            Assembler.Xor(func.GeneratedCode, localReg.Value.IntRegister, localReg.Value.IntRegister);
-                        }
-                        else
-                        {
-                            //IntPtr valuePtr = virtualMachine.Compiler.MemoryManager.AllocateReadonly(0);
-                            //RawAssembler.MoveMemoryToRegister(func.GeneratedCode, localReg.Value.FloatRegister, valuePtr.ToInt32());
-                            Assembler.Push(func.GeneratedCode, 0);
-                            Assembler.Pop(func.GeneratedCode, localReg.Value.FloatRegister);
+                            case HardwareRegisterType.Int:
+                                Assembler.Xor(func.GeneratedCode, localReg.Value.IntRegister, localReg.Value.IntRegister);
+                                break;
+                            case HardwareRegisterType.Float:
+                                //IntPtr valuePtr = virtualMachine.Compiler.MemoryManager.AllocateReadonly(0);
+                                //RawAssembler.MoveMemoryToRegister(func.GeneratedCode, localReg.Value.FloatRegister, valuePtr.ToInt32());
+                                Assembler.Push(func.GeneratedCode, 0);
+                                Assembler.Pop(func.GeneratedCode, localReg.Value.FloatRegister);
+                                break;
                         }
                     }
                     else
                     {
                         var spillReg = virtualAssembler.GetIntSpillRegister();
                         int stackOffset =
-                            -RawAssembler.RegisterSize
+                            -Assembler.RegisterSize
                             * (1 + compilationData.RegisterAllocation.GetStackIndex(localRegister) ?? 0);
 
                         Assembler.Move(func.GeneratedCode, new MemoryOperand(Register.BP, stackOffset), spillReg);
@@ -282,14 +284,18 @@ namespace XONEVirtualMachine.Compiler.Win64
                                     if (op1Register.HasValue && op1Register == Register.AX)
                                     {
                                         saveRegisters = virtualAssembler.GetAliveRegisters(index)
-                                           .Where(x => x.IsInt && x.IntRegister == new IntRegister(Register.DX))
+                                           .Where(x =>
+                                                x.Type == HardwareRegisterType.Int
+                                                && x.IntRegister == new IntRegister(Register.DX))
                                            .Select(x => x.IntRegister)
                                            .ToList();
                                     }
                                     else
                                     {
                                         saveRegisters = virtualAssembler.GetAliveRegisters(index)
-                                           .Where(x => x.IsInt && (x == new IntRegister(Register.AX) || x == new IntRegister(Register.DX)))
+                                           .Where(x => 
+                                                x.Type == HardwareRegisterType.Int
+                                                && (x == new IntRegister(Register.AX) || x == new IntRegister(Register.DX)))
                                            .Select(x => x.IntRegister)
                                            .ToList();
                                     }
@@ -551,7 +557,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.LoadArgument:
                     {
                         //Load the virtual register with the argument valuie
-                        int argOffset = (instruction.IntValue + stackOffset) * -RawAssembler.RegisterSize;
+                        int argOffset = (instruction.IntValue + stackOffset) * -Assembler.RegisterSize;
                         var storeReg = GetAssignRegister();
 
                         if (storeReg.Type == VirtualRegisterType.Integer)

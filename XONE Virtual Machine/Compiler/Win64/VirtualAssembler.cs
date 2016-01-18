@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler.x64;
 using XONEVirtualMachine.Compiler.Analysis;
 
 namespace XONEVirtualMachine.Compiler.Win64
@@ -257,7 +258,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="stackIndex">The stack index</param>
         public int CalculateStackOffset(int stackIndex)
         {
-            return -RawAssembler.RegisterSize * (1 + this.compilationData.Function.Definition.Parameters.Count + stackIndex);
+            return -Assembler.RegisterSize * (1 + this.compilationData.Function.Definition.Parameters.Count + stackIndex);
         }
 
         /// <summary>

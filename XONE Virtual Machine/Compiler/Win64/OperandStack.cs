@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler.x64;
 using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
@@ -51,7 +52,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         private int GetStackOperandOffset(int operandStackIndex)
         {
             return 
-                -RawAssembler.RegisterSize
+                -Assembler.RegisterSize
                 * (1 + this.function.Locals.Count + this.function.Definition.Parameters.Count + operandStackIndex);
         }
 

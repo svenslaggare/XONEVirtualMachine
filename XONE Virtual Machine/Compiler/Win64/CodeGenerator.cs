@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler.x64;
 using XONEVirtualMachine.Compiler.Analysis;
 using XONEVirtualMachine.Core;
 
@@ -34,8 +35,8 @@ namespace XONEVirtualMachine.Compiler.Win64
         /// <param name="callRegister">The register where the address will be stored in</param>
         private void GenerateCall(IList<byte> generatedCode, IntPtr toCall, Register callRegister = Register.AX)
         {
-            RawAssembler.MoveLongToRegister(generatedCode, callRegister, toCall.ToInt64());
-            RawAssembler.CallInRegister(generatedCode, callRegister);
+            Assembler.Move(generatedCode, callRegister, toCall.ToInt64());
+            Assembler.CallInRegister(generatedCode, callRegister);
         }
 
         /// <summary>
@@ -65,7 +66,7 @@ namespace XONEVirtualMachine.Compiler.Win64
             var def = function.Definition;
             int neededStackSize =
                 (def.Parameters.Count + function.Locals.Count + compilationData.Function.OperandStackSize)
-                * RawAssembler.RegisterSize;
+                * Assembler.RegisterSize;
 
             int stackSize = ((neededStackSize + 15) / 16) * 16;
             compilationData.StackSize = stackSize;
@@ -101,7 +102,7 @@ namespace XONEVirtualMachine.Compiler.Win64
 
                 for (int i = 0; i < func.Locals.Count; i++)
                 {
-                    int localOffset = (i + func.Definition.Parameters.Count + 1) * -RawAssembler.RegisterSize;
+                    int localOffset = (i + func.Definition.Parameters.Count + 1) * -Assembler.RegisterSize;
                     RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                         func.GeneratedCode,
                         Register.BP,
@@ -269,7 +270,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 case OpCodes.LoadArgument:
                     {
                         //Load rax with the argument
-                        int argOffset = (instruction.IntValue + stackOffset) * -RawAssembler.RegisterSize;
+                        int argOffset = (instruction.IntValue + stackOffset) * -Assembler.RegisterSize;
 
                         RawAssembler.MoveMemoryRegisterWithOffsetToRegister(
                             generatedCode,
@@ -287,7 +288,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                         //Load rax with the locals offset
                         int localOffset =
                             (stackOffset + instruction.IntValue + funcDef.Parameters.Count)
-                            * -RawAssembler.RegisterSize;
+                            * -Assembler.RegisterSize;
 
                         if (instruction.OpCode == OpCodes.LoadLocal)
                         {

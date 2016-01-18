@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SharpAssembler.x64;
 using XONEVirtualMachine.Core;
 
 namespace XONEVirtualMachine.Compiler.Win64
@@ -106,7 +107,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         private void MoveNoneFloatArgumentToStack(CompilationData compilationData, int argumentIndex)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
-            int argStackOffset = -(1 + argumentIndex) * RawAssembler.RegisterSize;
+            int argStackOffset = -(1 + argumentIndex) * Assembler.RegisterSize;
 
             if (argumentIndex >= numRegisterArguments)
             {
@@ -119,7 +120,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     generatedCode,
                     Register.AX,
                     Register.BP,
-                    RawAssembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
+                    Assembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
@@ -173,7 +174,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         private void MoveFloatArgumentToStack(CompilationData compilationData, int argumentIndex)
         {
             var generatedCode = compilationData.Function.GeneratedCode;
-            int argStackOffset = -(1 + argumentIndex) * RawAssembler.RegisterSize;
+            int argStackOffset = -(1 + argumentIndex) * Assembler.RegisterSize;
 
             if (argumentIndex >= numRegisterArguments)
             {
@@ -186,7 +187,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                     generatedCode,
                     Register.AX,
                     Register.BP,
-                    RawAssembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
+                    Assembler.RegisterSize * (6 + stackArgumentIndex)); //mov rax, [rbp+REG_SIZE*<arg offset>]
 
                 RawAssembler.MoveRegisterToMemoryRegisterWithOffset(
                     generatedCode,
@@ -368,7 +369,7 @@ namespace XONEVirtualMachine.Compiler.Win64
         public int CalculateStackAlignment(CompilationData compilationData, IReadOnlyList<VMType> parameterTypes)
         {
             int numStackArgs = this.CalculateStackArguments(parameterTypes);
-            return (numStackArgs % 2) * RawAssembler.RegisterSize;
+            return (numStackArgs % 2) * Assembler.RegisterSize;
         }
 
         /// <summary>
@@ -407,7 +408,7 @@ namespace XONEVirtualMachine.Compiler.Win64
                 RawAssembler.AddConstantToRegister(
                     compilationData.Function.GeneratedCode,
                     Register.SP,
-                    numStackArgs * RawAssembler.RegisterSize);
+                    numStackArgs * Assembler.RegisterSize);
             }
 
             if (!toCall.ReturnType.IsPrimitiveType(PrimitiveTypes.Void))

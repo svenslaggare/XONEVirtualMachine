@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>XONEVirtualMachine</RootNamespace>
     <AssemblyName>XONE Virtual Machine</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -60,6 +61,9 @@
       <HintPath>..\packages\BeaEngine.Net.0.13\lib\net35\BeaEngine.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="SharpAssembler">
+      <HintPath>..\..\SharpAssembler\SharpAssembler\bin\x64\Debug\SharpAssembler.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -80,7 +84,6 @@
     <Compile Include="Compiler\Disassembler.cs" />
     <Compile Include="Compiler\INativeDisassembler.cs" />
     <Compile Include="Compiler\UnresolvedBranchTarget.cs" />
-    <Compile Include="Compiler\Win64\Assembler.cs" />
     <Compile Include="Compiler\Win64\Disassembler.cs" />
     <Compile Include="Compiler\Win64\OptimizedCallingConventions.cs" />
     <Compile Include="Compiler\Win64\OptimizedCodeGenerator.cs" />
@@ -90,7 +93,6 @@
     <Compile Include="Compiler\IJITCompiler.cs" />
     <Compile Include="Compiler\Win64\CallingConvetions.cs" />
     <Compile Include="Compiler\Win64\CompilationData.cs" />
-    <Compile Include="Compiler\Win64\RawAssembler.cs" />
     <Compile Include="Compiler\Win64\CodeGenerator.cs" />
     <Compile Include="Compiler\CodePage.cs" />
     <Compile Include="Compiler\Win64\JITCompiler.cs" />

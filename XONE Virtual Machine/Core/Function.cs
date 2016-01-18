@@ -45,7 +45,7 @@ namespace XONEVirtualMachine.Core
         /// <summary>
         /// Indicates if to optimize the function
         /// </summary>
-        public bool Optimize { get; set; } = true;
+        public bool Optimize { get; set; } = false;
 
         /// <summary>
         /// Creates a new function
