@@ -61,8 +61,9 @@
       <HintPath>..\packages\BeaEngine.Net.0.13\lib\net35\BeaEngine.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SharpAssembler">
-      <HintPath>..\..\SharpAssembler\SharpAssembler\bin\x64\Debug\SharpAssembler.dll</HintPath>
+    <Reference Include="SharpAssembler, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\SharpAssembler.0.0.2\lib\SharpAssembler.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
